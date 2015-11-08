@@ -1,3 +1,9 @@
+This branch
+===========
+
+This branch contains custom tweaks making workflow
+of the [In adiutorium](https://github.com/igneus/In-adiutorium) project more pleasant.
+
 README for Frescobaldi 2
 ========================
 

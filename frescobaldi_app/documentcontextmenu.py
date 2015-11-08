@@ -25,8 +25,10 @@ Used by the tabbar and the doclist tool.
 from __future__ import unicode_literals
 
 import weakref
+import os
 
-from PyQt4.QtGui import QMenu
+from PyQt4.QtGui import QMenu, QMessageBox
+from PyQt4.QtCore import QUrl
 
 import app
 import icons
@@ -36,11 +38,11 @@ class DocumentContextMenu(QMenu):
     def __init__(self, mainwindow):
         super(DocumentContextMenu, self).__init__(mainwindow)
         self._doc = lambda: None
-        
+
         self.createActions()
         app.translateUI(self)
         self.aboutToShow.connect(self.updateActions)
-    
+
     def createActions(self):
         self.doc_save = self.addAction(icons.get('document-save'), '')
         self.doc_save_as = self.addAction(icons.get('document-save-as'), '')
@@ -50,13 +52,18 @@ class DocumentContextMenu(QMenu):
         self.addSeparator()
         self.doc_toggle_sticky = self.addAction(icons.get('pushpin'), '')
         self.doc_toggle_sticky.setCheckable(True)
-        
+
+        self.addSeparator()
+        self.doc_open_inadiutorium_variations = self.addAction(icons.get('document-open'), '')
+
         self.doc_save.triggered.connect(self.docSave)
         self.doc_save_as.triggered.connect(self.docSaveAs)
         self.doc_close.triggered.connect(self.docClose)
         self.doc_close_others.triggered.connect(self.docCloseOther)
         self.doc_toggle_sticky.triggered.connect(self.docToggleSticky)
-    
+
+        self.doc_open_inadiutorium_variations.triggered.connect(self.docOpenInAdiutoriumVariations)
+
     def updateActions(self):
         """Called just before show."""
         doc = self._doc()
@@ -64,31 +71,33 @@ class DocumentContextMenu(QMenu):
             import engrave
             engraver = engrave.Engraver.instance(self.mainwindow())
             self.doc_toggle_sticky.setChecked(doc is engraver.stickyDocument())
-    
+
     def translateUI(self):
         self.doc_save.setText(_("&Save"))
         self.doc_save_as.setText(_("Save &As..."))
         self.doc_close.setText(_("&Close"))
         self.doc_close_others.setText(_("Close Other Documents"))
         self.doc_toggle_sticky.setText(_("Always &Engrave This Document"))
-    
+
+        self.doc_open_inadiutorium_variations.setText('Open Variations/Main file')
+
     def mainwindow(self):
         return self.parentWidget()
-        
+
     def exec_(self, document, pos):
         self._doc = weakref.ref(document)
         super(DocumentContextMenu, self).exec_(pos)
-    
+
     def docSave(self):
         doc = self._doc()
         if doc:
             self.mainwindow().saveDocument(doc)
-    
+
     def docSaveAs(self):
         doc = self._doc()
         if doc:
             self.mainwindow().saveDocumentAs(doc)
-    
+
     def docClose(self):
         doc = self._doc()
         if doc:
@@ -113,4 +122,47 @@ class DocumentContextMenu(QMenu):
             else:
                 engraver.setStickyDocument(doc)
 
+    def docOpenInAdiutoriumVariations(self):
+        """
+        If current file is a 'main' file in the In adiutorium project,
+        opens it's 'variations' file.
+        In the other case opens the corresponding 'main' file.
+        """
 
+        def is_in_adiutorium_file(path):
+            return 'In-adiutorium/' in path
+
+        def is_variations_file(path):
+            return is_in_adiutorium_file(path) and '/variationes/' in path
+
+        def main_file(path):
+            return path.replace('variationes/', '')
+
+        def variations_file(path):
+            return path.replace('In-adiutorium/', 'In-adiutorium/variationes/')
+
+        cur = self._doc()
+        if not cur:
+            return
+
+        path = cur.url().path()
+
+        path_to_open = None
+        if is_variations_file(path):
+            path_to_open = main_file(path)
+        elif is_in_adiutorium_file(path):
+            path_to_open = variations_file(path)
+        else:
+            msg = 'Current file does not seem to be part of the In adiutorium project structure.'
+            QMessageBox.critical(self, app.caption(_("Error")), msg)
+            return
+
+        url = QUrl.fromLocalFile(path_to_open)
+        try:
+            doc = app.openUrl(url)
+        except IOError as e:
+            msg = 'Failed to read corresponding file %s.' % path_to_open
+            QMessageBox.critical(self, app.caption(_("Error")), msg)
+            return
+        else:
+            self.mainwindow().setCurrentDocument(doc)
