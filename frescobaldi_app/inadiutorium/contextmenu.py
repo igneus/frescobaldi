@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from PyQt4.QtGui import QAction, QMessageBox, QTextCursor
+from PyQt4.QtGui import QAction, QMessageBox, QTextCursor, QTextDocument
 from PyQt4.QtCore import QUrl
 
 import app
@@ -28,6 +28,29 @@ def actions(cursor, menu, mainwindow):
     current_score = score.score_under_cursor(cursor)
     if current_score is None:
         return actions
+
+    a = QAction(menu)
+    a.setText('Duplicate score')
+    @a.triggered.connect
+    def duplicate():
+        cursor = QTextCursor(document)
+        cursor.setPosition(current_score.end(), QTextCursor.MoveAnchor)
+        cursor.insertText('\n\n')
+
+        copy_cursor = QTextCursor(document)
+        score_end = current_score.end()
+        # it isn't easily possible to get score start index
+        # from the DOM ...
+        start_token = '\\score'
+        score_start_cur = document.find(start_token, score_end, QTextDocument.FindBackward)
+        score_start = score_start_cur.position() - len(start_token)
+        copy_cursor.setPosition(score_start, QTextCursor.MoveAnchor)
+        copy_cursor.setPosition(score_end, QTextCursor.KeepAnchor)
+
+        cursor.insertFragment(copy_cursor.selection())
+        mainwindow.setTextCursor(cursor)
+
+    actions.append(a)
 
     if current_score.has_fial():
         a = QAction(menu)
