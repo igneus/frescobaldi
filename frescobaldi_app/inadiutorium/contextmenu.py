@@ -110,10 +110,14 @@ def open_score(path, score_id, mainwindow):
         doc = app.openUrl(url)
     except IOError as e:
         msg = 'Failed to read referenced file {0}.'.format(path)
-        QMessageBox.critical(self, app.caption(_("Error")), msg)
+        QMessageBox.critical(mainwindow, app.caption(_("Error")), msg)
         return
     else:
         mainwindow.setCurrentDocument(doc)
         id_str = 'id = "{0}"'.format(score_id)
         cursor = doc.find(id_str)
-        mainwindow.setTextCursor(cursor)
+        if cursor.isNull():
+            msg = "Score with id '{0}' not found.".format(score_id)
+            QMessageBox.information(mainwindow, app.caption(_("Error")), msg)
+        else:
+            mainwindow.setTextCursor(cursor)
