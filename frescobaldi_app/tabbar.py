@@ -24,7 +24,7 @@ The tab bar with the documents.
 from __future__ import unicode_literals
 
 from PyQt4.QtCore import Qt, QUrl, pyqtSignal
-from PyQt4.QtGui import QMenu, QTabBar
+from PyQt4.QtGui import QMenu, QTabBar, QColor
 
 import app
 import icons
@@ -33,6 +33,8 @@ import documentcontextmenu
 import jobmanager
 import jobattributes
 import util
+
+import inadiutorium.variations
 
 
 class TabBar(QTabBar):
@@ -107,6 +109,10 @@ class TabBar(QTabBar):
             else:
                 icon = 'text-plain'
             self.setTabIcon(index, icons.get(icon))
+
+            if tooltip and inadiutorium.variations.is_variations_file(tooltip):
+                color = QColor('indigo')
+                self.setTabTextColor(index, color)
     
     def setCurrentDocument(self, doc):
         """ Raise the tab belonging to this document."""
