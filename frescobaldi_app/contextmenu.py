@@ -33,6 +33,8 @@ import icons
 import util
 import browseriface
 
+import inadiutorium.contextmenu
+
 
 def contextmenu(view):
     cursor = view.textCursor()
@@ -45,6 +47,8 @@ def contextmenu(view):
     actions.extend(open_files(cursor, menu, mainwindow))
     
     actions.extend(jump_to_definition(cursor, menu, mainwindow))
+
+    actions.extend(inadiutorium.contextmenu.actions(cursor, menu, mainwindow))
     
     
     if cursor.hasSelection():
