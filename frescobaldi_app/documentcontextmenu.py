@@ -32,6 +32,8 @@ from PyQt4.QtCore import QUrl
 
 import app
 import icons
+from inadiutorium import is_in_adiutorium_file
+from inadiutorium.variations import is_variations_file, main_file, variations_file
 
 
 class DocumentContextMenu(QMenu):
@@ -128,18 +130,6 @@ class DocumentContextMenu(QMenu):
         opens it's 'variations' file.
         In the other case opens the corresponding 'main' file.
         """
-
-        def is_in_adiutorium_file(path):
-            return 'In-adiutorium/' in path
-
-        def is_variations_file(path):
-            return is_in_adiutorium_file(path) and '/variationes/' in path
-
-        def main_file(path):
-            return path.replace('variationes/', '')
-
-        def variations_file(path):
-            return path.replace('In-adiutorium/', 'In-adiutorium/variationes/')
 
         cur = self._doc()
         if not cur:
