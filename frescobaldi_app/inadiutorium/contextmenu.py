@@ -55,10 +55,12 @@ class ActionsFactory(object):
 
         @a.triggered.connect
         def trigger():
+            # add newline after the score
             cursor = QTextCursor(self._document)
             cursor.setPosition(self._current_score.end(), QTextCursor.MoveAnchor)
             cursor.insertText('\n\n')
 
+            # copy score
             copy_cursor = QTextCursor(self._document)
             score_end = self._current_score.end()
             # it isn't easily possible to get score start index
@@ -69,7 +71,14 @@ class ActionsFactory(object):
             copy_cursor.setPosition(score_start, QTextCursor.MoveAnchor)
             copy_cursor.setPosition(score_end, QTextCursor.KeepAnchor)
 
-            cursor.insertFragment(copy_cursor.selection())
+            # insert copy
+            fragment = copy_cursor.selection()
+            cursor.insertFragment(fragment)
+
+            # make it selected
+            fragment_len = len(fragment.toPlainText())
+            score_beginning = cursor.position() - fragment_len
+            cursor.setPosition(score_beginning, QTextCursor.KeepAnchor)
             self._mainwindow.setTextCursor(cursor)
 
         return a
