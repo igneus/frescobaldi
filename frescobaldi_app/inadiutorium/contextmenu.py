@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from PyQt4.QtGui import QAction, QMessageBox, QTextCursor, QTextDocument
+from PyQt4.QtGui import QApplication, QAction, QMessageBox, QTextCursor, QTextDocument
 from PyQt4.QtCore import QUrl
 
 import app
@@ -39,6 +39,7 @@ class ActionsFactory(object):
 
         actions = []
 
+        actions.append(self._copy())
         actions.append(self._duplicate())
 
         if self._current_score.has_fial():
@@ -48,6 +49,29 @@ class ActionsFactory(object):
             actions.append(self._goto_variations())
 
         return actions
+
+    def _copy(self):
+        a = QAction(self._menu)
+        a.setText('Copy score')
+
+        @a.triggered.connect
+        def trigger():
+            # copy score
+            copy_cursor = QTextCursor(self._document)
+            score_end = self._current_score.end()
+            # it isn't easily possible to get score start index
+            # from the DOM ...
+            start_token = '\\score'
+            score_start_cur = self._document.find(start_token, score_end, QTextDocument.FindBackward)
+            score_start = score_start_cur.position() - len(start_token)
+            copy_cursor.setPosition(score_start, QTextCursor.MoveAnchor)
+            copy_cursor.setPosition(score_end, QTextCursor.KeepAnchor)
+
+            # copy to clipboard
+            fragment = copy_cursor.selection()
+            QApplication.clipboard().setText(fragment.toPlainText())
+
+        return a
 
     def _duplicate(self):
         a = QAction(self._menu)
