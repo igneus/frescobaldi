@@ -92,6 +92,8 @@ class ActionsFactory(object):
             start_token = '\\score'
             score_start_cur = self._document.find(start_token, score_end, QTextDocument.FindBackward)
             score_start = score_start_cur.position() - len(start_token)
+            while self._document.characterAt(score_start - 1) == ' ':
+                score_start -= 1
             copy_cursor.setPosition(score_start, QTextCursor.MoveAnchor)
             copy_cursor.setPosition(score_end, QTextCursor.KeepAnchor)
 
