@@ -20,7 +20,6 @@
 midifile.event -- simple Event namedtuple types and a default parsing handler.
 """
 
-from __future__ import unicode_literals
 
 import collections
 
@@ -36,10 +35,10 @@ PitchBendEvent = collections.namedtuple('PitchBendEvent', 'channel value')
 
 class EventFactory(object):
     """Factory for parsed MIDI events.
-    
+
     The default 'methods' create namedtuple objects.
     You can override one or more of those names to return other objects.
-    
+
     """
     note_event = NoteEvent
     controller_event = ControllerEvent

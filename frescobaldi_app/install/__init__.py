@@ -21,9 +21,8 @@
 Checks for upgrades in the settings structure.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import QSettings
+from PyQt5.QtCore import QSettings
 
 import app
 
@@ -34,13 +33,13 @@ SETTINGS_VERSION = 1
 
 def update_settings():
     """Checks whether settings needs to be migrated to a new structure."""
-    
+
     version = QSettings().value("settings_version", 0, int)
 
     if version != SETTINGS_VERSION:
         from . import update
         update.update(version)
-        
+
         #uncomment next lines when the upgrade from 0 to 1 works
         QSettings().setValue("settings_version", SETTINGS_VERSION)
         QSettings().sync() # just to be sure

@@ -21,10 +21,10 @@
 Simple dialogs to ask input from the user.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import QSettings, Qt
-from PyQt4.QtGui import QCompleter, QColor, QColorDialog, QWidget
+from PyQt5.QtCore import QSettings, Qt
+from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QCompleter, QColorDialog, QWidget
 
 import app
 import widgets.dialog
@@ -44,9 +44,9 @@ def getText(
         complete = None,
         ):
     """Asks a string of text from the user.
-    
+
     Arguments:
-    
+
     parent: parent widget or None
     title: dialog window title (without appname)
     message: message, question
@@ -58,8 +58,8 @@ def getText(
         validation method using a QRegExpValidator.
     wordWrap: whether to word-wrap the message text (default: True).
     complete: a string list or QAbstractItemModel to provide completions.
-    
-    """    
+
+    """
     dlg = widgets.dialog.TextDialog(parent,
         title=app.caption(title), message=message, icon=icon)
     dlg.setText(text)

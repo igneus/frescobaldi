@@ -21,13 +21,12 @@
 The window displayed when a Document is modified by an external program.
 """
 
-from __future__ import unicode_literals
 
 import os
 
-from PyQt4.QtCore import QSize, Qt
-from PyQt4.QtGui import (QCheckBox, QGridLayout, QMessageBox, QPushButton,
-                         QTextBrowser, QTreeWidget, QTreeWidgetItem)
+from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtWidgets import (QCheckBox, QGridLayout, QMessageBox, QPushButton,
+                             QTextBrowser, QTreeWidget, QTreeWidgetItem)
 
 import app
 import qutil
@@ -56,20 +55,20 @@ class ChangedDocumentsListDialog(widgets.dialog.Dialog):
         super(ChangedDocumentsListDialog, self).__init__(buttons=('close',))
         self.setWindowModality(Qt.NonModal)
         self.setAttribute(Qt.WA_QuitOnClose, False)
-        
+
         layout = QGridLayout(margin=0)
         self.mainWidget().setLayout(layout)
         self.tree = QTreeWidget(headerHidden=True, rootIsDecorated=False,
                                 columnCount=2, itemsExpandable=False)
         self.tree.setSelectionMode(QTreeWidget.ExtendedSelection)
-        
+
         self.buttonReload = QPushButton()
         self.buttonReloadAll = QPushButton()
         self.buttonSave = QPushButton()
         self.buttonSaveAll = QPushButton()
         self.buttonShowDiff = QPushButton()
         self.checkWatchingEnabled = QCheckBox(checked=enabled())
-        
+
         layout.addWidget(self.tree, 0, 0, 6, 1)
         layout.addWidget(self.buttonReload, 0, 1)
         layout.addWidget(self.buttonReloadAll, 1, 1)
@@ -78,7 +77,7 @@ class ChangedDocumentsListDialog(widgets.dialog.Dialog):
         layout.addWidget(self.buttonShowDiff, 4, 1)
         layout.addWidget(self.checkWatchingEnabled, 6, 0, 1, 2)
         layout.setRowStretch(5, 10)
-        
+
         app.documentClosed.connect(self.removeDocument)
         app.documentSaved.connect(self.removeDocument)
         app.documentUrlChanged.connect(self.removeDocument)
@@ -90,12 +89,12 @@ class ChangedDocumentsListDialog(widgets.dialog.Dialog):
         self.buttonSaveAll.clicked.connect(self.slotButtonSaveAll)
         self.buttonShowDiff.clicked.connect(self.slotButtonShowDiff)
         self.checkWatchingEnabled.toggled.connect(setEnabled)
-    
+
         app.translateUI(self)
         qutil.saveDialogSize(self, 'externalchanges/dialog/size', QSize(400, 200))
         userguide.addButton(self.buttonBox(), "externalchanges")
         self.button('close').setFocus()
-    
+
     def translateUI(self):
         self.setWindowTitle(app.caption(_("Modified Files")))
         self.setMessage(_(
@@ -128,7 +127,7 @@ class ChangedDocumentsListDialog(widgets.dialog.Dialog):
         self.checkWatchingEnabled.setToolTip(_(
             "If checked, Frescobaldi will warn you when opened files are "
             "modified or deleted by other applications."))
-    
+
     def setDocuments(self, documents):
         """Display the specified documents in the list."""
         # clear the treewidget
@@ -154,7 +153,7 @@ class ChangedDocumentsListDialog(widgets.dialog.Dialog):
                 fileitem = QTreeWidgetItem()
                 diritem.addChild(fileitem)
                 if documentwatcher.DocumentWatcher.instance(document).isdeleted():
-                    itemtext = _("[deleted]") 
+                    itemtext = _("[deleted]")
                     icon = "dialog-error"
                 else:
                     itemtext = _("[modified]")
@@ -169,7 +168,7 @@ class ChangedDocumentsListDialog(widgets.dialog.Dialog):
         self.tree.resizeColumnToContents(0)
         self.tree.resizeColumnToContents(1)
         self.updateButtons()
-        
+
     def removeDocument(self, document):
         """Remove the specified document from our list."""
         for d in range(self.tree.topLevelItemCount()):
@@ -188,17 +187,17 @@ class ChangedDocumentsListDialog(widgets.dialog.Dialog):
         # hide if no documents are left
         if self.tree.topLevelItemCount() == 0:
             self.hide()
-    
+
     def selectedDocuments(self):
         """Return the selected documents."""
         return [i.doc for i in self.tree.selectedItems()]
-    
+
     def allDocuments(self):
         """Return all shown documents."""
         return [self.tree.topLevelItem(d).child(f).doc
                 for d in range(self.tree.topLevelItemCount())
                 for f in range(self.tree.topLevelItem(d).childCount())]
-    
+
     def updateButtons(self):
         """Updates the buttons regarding the selection."""
         docs_sel = self.selectedDocuments()
@@ -212,23 +211,23 @@ class ChangedDocumentsListDialog(widgets.dialog.Dialog):
         self.buttonReload.setEnabled(not all_deleted_sel)
         self.buttonReloadAll.setEnabled(not all_deleted_all)
         self.buttonShowDiff.setEnabled(len(docs_sel) == 1 and not all_deleted_sel)
-    
+
     def slotButtonReload(self):
         """Called when the user clicks Reload."""
         self.reloadDocuments(self.selectedDocuments())
-        
+
     def slotButtonReloadAll(self):
         """Called when the user clicks Reload All."""
         self.reloadDocuments(self.allDocuments())
-    
+
     def slotButtonSave(self):
         """Called when the user clicks Save."""
         self.saveDocuments(self.selectedDocuments())
-    
+
     def slotButtonSaveAll(self):
         """Called when the user clicks Save All."""
         self.saveDocuments(self.allDocuments())
-    
+
     def reloadDocuments(self, documents):
         """Used by slotButtonReload and slotButtonReloadAll."""
         failures = []
@@ -263,7 +262,7 @@ class ChangedDocumentsListDialog(widgets.dialog.Dialog):
               "Please save the documents using the \"Save As...\" dialog.",
               len(failures))
             QMessageBox.critical(self, app.caption(_("Error")), msg)
-        
+
     def slotButtonShowDiff(self):
         """Called when the user clicks Show Difference."""
         docs = self.selectedDocuments() or self.allDocuments()
@@ -272,18 +271,18 @@ class ChangedDocumentsListDialog(widgets.dialog.Dialog):
         d = docs[0]
         if documentwatcher.DocumentWatcher.instance(d).isdeleted():
             return
-        
+
         filename = d.url().toLocalFile()
         try:
             with open(filename, 'rb') as f:
                 disktext = util.decode(f.read())
         except (IOError, OSError):
             return
-        
+
         currenttext = d.toPlainText()
-        
+
         html = htmldiff.htmldiff(
-            currenttext, disktext, 
+            currenttext, disktext,
             _("Current Document"), _("Document on Disk"), numlines=5)
         dlg = widgets.dialog.Dialog(self, buttons=('close',))
         view = QTextBrowser(lineWrapMode=QTextBrowser.NoWrap)

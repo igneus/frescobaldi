@@ -21,9 +21,9 @@
 A line number area to be used in a QPlainTextEdit.
 """
 
-from PyQt4.QtCore import QEvent, QPoint, QRect, QSize, Qt
-from PyQt4.QtGui import (
-    QApplication, QFontMetrics, QMouseEvent, QPainter, QWidget)
+from PyQt5.QtCore import QEvent, QPoint, QRect, QSize, Qt
+from PyQt5.QtGui import QFontMetrics, QMouseEvent, QPainter
+from PyQt5.QtWidgets import QApplication, QWidget
 
 
 class LineNumberArea(QWidget):
@@ -32,7 +32,7 @@ class LineNumberArea(QWidget):
         self._textedit = None
         self.setAutoFillBackground(True)
         self.setTextEdit(textedit)
-    
+
     def setTextEdit(self, edit):
         """Sets a QPlainTextEdit instance to show linenumbers for, or None."""
         if self._textedit:
@@ -46,11 +46,11 @@ class LineNumberArea(QWidget):
         else:
             self._width = 0
         self.update()
-        
+
     def textEdit(self):
         """Returns our QPlainTextEdit."""
         return self._textedit
-        
+
     def sizeHint(self):
         return QSize(self._width, 50)
 

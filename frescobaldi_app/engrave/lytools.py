@@ -21,11 +21,10 @@
 Run LilyPond to get various types of output.
 """
 
-from __future__ import unicode_literals
 
 import codecs
 
-from PyQt4.QtCore import QSize, Qt
+from PyQt5.QtCore import QSize, Qt
 
 import app
 import job
@@ -44,7 +43,7 @@ def show_available_fonts(mainwin, info):
     qutil.saveDialogSize(dlg, "engrave/tools/available-fonts/dialog/size", QSize(640, 400))
     dlg.setAttribute(Qt.WA_DeleteOnClose)
     dlg.show()
-    
+
 
 class Dialog(widgets.dialog.Dialog):
     """Dialog to run a certain LilyPond command and simply show the log."""

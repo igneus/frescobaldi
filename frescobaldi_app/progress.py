@@ -22,10 +22,9 @@ Manages the progress bar in the status bar of ViewSpaces.
 """
 
 from __future__ import division
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import Qt, QTimeLine, QTimer
-from PyQt4.QtGui import QProgressBar
+from PyQt5.QtCore import Qt, QTimeLine, QTimer
+from PyQt5.QtWidgets import QProgressBar
 
 import app
 import plugin
@@ -46,10 +45,10 @@ class ProgressBar(plugin.ViewSpacePlugin):
         viewSpace.viewChanged.connect(self.viewChanged)
         app.jobStarted.connect(self.jobStarted)
         app.jobFinished.connect(self.jobFinished)
-        
+
     def viewChanged(self, view):
         self.showProgress(view.document())
-    
+
     def showProgress(self, document):
         job = jobmanager.job(document)
         if job and job.is_running():
@@ -67,11 +66,11 @@ class ProgressBar(plugin.ViewSpacePlugin):
                 self._bar.setTextVisible(True)
         else:
             self._bar.stop(False)
-    
+
     def jobStarted(self, document, job):
         if document == self.viewSpace().document():
             self.showProgress(document)
-    
+
     def jobFinished(self, document, job, success):
         if document == self.viewSpace().document():
             self._bar.stop(success and not jobattributes.get(job).hidden)

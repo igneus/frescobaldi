@@ -24,10 +24,9 @@ a file is clicked in the file manager.
 Currently this makes only sense on Mac OS X.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import QEvent, QObject
-from PyQt4.QtGui import QApplication
+from PyQt5.QtCore import QEvent, QObject
+from PyQt5.QtWidgets import QApplication
 
 import app
 
@@ -37,11 +36,11 @@ handler = None
 
 def openUrl(url):
     """Open Url.
-    
+
     If there is an active MainWindow, the document is made the current
     document in that window. If there is no MainWindow at all, it is
     created.
-    
+
     """
     win = app.activeWindow()
     if not win:

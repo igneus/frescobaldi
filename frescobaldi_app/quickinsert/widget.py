@@ -21,19 +21,18 @@
 The Quick Insert panel widget.
 """
 
-from __future__ import unicode_literals
 
 import weakref
 
-from PyQt4.QtCore import QSettings
-from PyQt4.QtGui import (QComboBox, QHBoxLayout, QLabel, QToolBox, QToolButton,
-                         QVBoxLayout, QWidget)
+from PyQt5.QtCore import QSettings
+from PyQt5.QtWidgets import (QComboBox, QHBoxLayout, QLabel, QToolBox,
+                             QToolButton, QVBoxLayout, QWidget)
 
 import app
 import userguide.util
 import icons
 import symbols
-import widgets.toolboxwheeler
+import gadgets.toolboxwheeler
 
 from . import articulations
 from . import barlines
@@ -47,11 +46,11 @@ class QuickInsert(QWidget):
         self._dockwidget = weakref.ref(dockwidget)
         # filled in by ButtonGroup subclasses
         self.actionDict = {}
-        
+
         layout = QVBoxLayout()
         self.setLayout(layout)
         layout.setContentsMargins(0, 0, 0, 0)
-        
+
         self.helpButton = QToolButton(
             icon = icons.get("help-contents"),
             autoRaise = True,
@@ -68,11 +67,11 @@ class QuickInsert(QWidget):
         hor.addWidget(self.directionLabel)
         hor.addWidget(self.direction)
         layout.addLayout(hor)
-        
+
         self.toolbox = QToolBox(self)
-        widgets.toolboxwheeler.ToolBoxWheeler(self.toolbox)
+        gadgets.toolboxwheeler.ToolBoxWheeler(self.toolbox)
         layout.addWidget(self.toolbox)
-        
+
         for cls in (
                 articulations.Articulations,
                 dynamics.Dynamics,
@@ -81,23 +80,23 @@ class QuickInsert(QWidget):
             ):
             widget = cls(self)
             self.toolbox.addItem(widget, widget.icon(), '')
-        
+
         app.translateUI(self)
         userguide.openWhatsThis(self)
-        
+
         # restore remembered current page
-        name = QSettings().value("quickinsert/current_tool", "", type(""))
+        name = QSettings().value("quickinsert/current_tool", "", str)
         if name:
             for i in range(self.toolbox.count()):
                 if name == self.toolbox.widget(i).__class__.__name__.lower():
                     self.toolbox.setCurrentIndex(i)
                     break
         self.toolbox.currentChanged.connect(self.slotCurrentChanged)
-        
+
     def slotCurrentChanged(self, index):
         name = self.toolbox.widget(index).__class__.__name__.lower()
         QSettings().setValue("quickinsert/current_tool", name)
-    
+
     def translateUI(self):
         self.setWhatsThis(_(
             "<p>With the Quick Insert Panel you can add various music "
@@ -111,7 +110,7 @@ class QuickInsert(QWidget):
         for i in range(self.toolbox.count()):
             self.toolbox.setItemText(i, self.toolbox.widget(i).title())
             self.toolbox.setItemToolTip(i, self.toolbox.widget(i).tooltip())
-            
+
     def actionForName(self, name):
         """This is called by the ShortcutCollection of our dockwidget, e.g. if the user presses a key."""
         try:

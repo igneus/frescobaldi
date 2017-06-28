@@ -21,10 +21,9 @@
 Documents list tool.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QKeySequence
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QKeySequence
 
 import panel
 
@@ -38,7 +37,7 @@ class DocumentList(panel.Panel):
     def translateUI(self):
         self.setWindowTitle(_("Documents"))
         self.toggleViewAction().setText(_("Docum&ents"))
-        
+
     def createWidget(self):
         from . import widget
         w = widget.Widget(self)

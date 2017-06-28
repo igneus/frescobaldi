@@ -21,17 +21,16 @@
 Dialog to copy contents from PDF to a raster image.
 """
 
-from __future__ import unicode_literals
 
 import collections
 import os
 import tempfile
 
-from PyQt4.QtCore import QSettings, QSize, Qt
-from PyQt4.QtGui import (QApplication, QBitmap, QCheckBox, QColor, QComboBox,
-                         QDialog, QDialogButtonBox, QDoubleValidator,
-                         QFileDialog, QHBoxLayout, QLabel, QMessageBox,
-                         QPushButton, QRegion, QVBoxLayout)
+from PyQt5.QtCore import QSettings, QSize, Qt
+from PyQt5.QtGui import QBitmap, QColor, QDoubleValidator, QRegion
+from PyQt5.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
+                             QDialogButtonBox, QFileDialog, QHBoxLayout,
+                             QLabel, QMessageBox, QPushButton, QVBoxLayout)
 
 import app
 import util
@@ -40,35 +39,24 @@ import icons
 import qpopplerview
 import widgets.imageviewer
 import widgets.colorbutton
-import widgets.drag
+import gadgets.drag
 
 try:
-    import popplerqt4
+    import popplerqt5
 except ImportError:
-    popplerqt4 = None
-
-from . import documents
+    popplerqt5 = None
 
 
-def copy(musicviewpanel):
-    """Shows the dialog."""
-    view = musicviewpanel.widget().view
-    selection = view.surface().selection()
-    
-    # get the largest page part that is in the selection
-    pages = list(view.surface().pageLayout().pagesAt(selection))
-    if not pages:
-        return
-        
-    def key(page):
-        size = page.rect().intersected(selection).size()
-        return size.width() + size.height()
-    page = max(pages, key = key)
-    dlg = Dialog(musicviewpanel)
+def copy_image(parent_widget, page, rect=None, filename=None):
+    """Shows the dialog to copy a PDF page to a raster image.
+
+    If rect is given, only that part of the page is copied.
+
+    """
+    dlg = Dialog(parent_widget)
     dlg.show()
-    dlg.setPage(page, selection)
+    dlg.setPage(page, rect, filename)
     dlg.finished.connect(dlg.deleteLater)
-
 
 
 class Dialog(QDialog):
@@ -83,11 +71,12 @@ class Dialog(QDialog):
         self.dpiCombo.lineEdit().setCompleter(None)
         self.dpiCombo.setValidator(QDoubleValidator(10.0, 1200.0, 4, self.dpiCombo))
         self.dpiCombo.addItems([format(i) for i in (72, 100, 200, 300, 600, 1200)])
-        
+
         self.colorButton = widgets.colorbutton.ColorButton()
         self.colorButton.setColor(QColor(Qt.white))
         self.crop = QCheckBox()
         self.antialias = QCheckBox(checked=True)
+        self.scaleup = QCheckBox(checked=False)
         self.dragfile = QPushButton(icons.get("image-x-generic"), None, None)
         self.fileDragger = FileDragger(self.dragfile)
         self.buttons = QDialogButtonBox(QDialogButtonBox.Close)
@@ -95,12 +84,12 @@ class Dialog(QDialog):
         self.copyButton.setIcon(icons.get('edit-copy'))
         self.saveButton = self.buttons.addButton('', QDialogButtonBox.ApplyRole)
         self.saveButton.setIcon(icons.get('document-save'))
-        
+
         layout = QVBoxLayout()
         self.setLayout(layout)
-        
+
         layout.addWidget(self.imageViewer)
-        
+
         controls = QHBoxLayout()
         layout.addLayout(controls)
         controls.addWidget(self.dpiLabel)
@@ -108,6 +97,7 @@ class Dialog(QDialog):
         controls.addWidget(self.colorButton)
         controls.addWidget(self.crop)
         controls.addWidget(self.antialias)
+        controls.addWidget(self.scaleup)
         controls.addStretch()
         controls.addWidget(self.dragfile)
         layout.addWidget(widgets.Separator())
@@ -119,18 +109,23 @@ class Dialog(QDialog):
         self.dpiCombo.editTextChanged.connect(self.drawImage)
         self.colorButton.colorChanged.connect(self.drawImage)
         self.antialias.toggled.connect(self.drawImage)
+        self.scaleup.toggled.connect(self.drawImage)
         self.crop.toggled.connect(self.cropImage)
         self.buttons.rejected.connect(self.reject)
         self.copyButton.clicked.connect(self.copyToClipboard)
         self.saveButton.clicked.connect(self.saveAs)
         qutil.saveDialogSize(self, "copy_image/dialog/size", QSize(480, 320))
-    
+
     def translateUI(self):
         self.setCaption()
         self.dpiLabel.setText(_("DPI:"))
         self.colorButton.setToolTip(_("Paper Color"))
         self.crop.setText(_("Auto-crop"))
         self.antialias.setText(_("Antialias"))
+        self.scaleup.setText(_("Scale 2x"))
+        self.scaleup.setToolTip(_(
+            "Render twice as large and scale back down\n"
+            "(recommended for small DPI values)."))
         self.dragfile.setText(_("Drag"))
         self.dragfile.setToolTip(_("Drag the image as a PNG file."))
         self.copyButton.setText(_("&Copy to Clipboard"))
@@ -146,15 +141,16 @@ class Dialog(QDialog):
             "You can also drag the small picture icon in the bottom right, "
             "which drags the actual file on disk, e.g. to an e-mail message.\n"
             "</p>").format(command="\u2318"))
-        
+
     def readSettings(self):
         s = QSettings()
         s.beginGroup('copy_image')
-        self.dpiCombo.setEditText(s.value("dpi", "100", type("")))
+        self.dpiCombo.setEditText(s.value("dpi", "100", str))
         self.colorButton.setColor(s.value("papercolor", QColor(Qt.white), QColor))
         self.crop.setChecked(s.value("autocrop", False, bool))
         self.antialias.setChecked(s.value("antialias", True, bool))
-    
+        self.scaleup.setChecked(s.value("scaleup", False, bool))
+
     def writeSettings(self):
         s = QSettings()
         s.beginGroup('copy_image')
@@ -162,7 +158,8 @@ class Dialog(QDialog):
         s.setValue("papercolor", self.colorButton.color())
         s.setValue("autocrop", self.crop.isChecked())
         s.setValue("antialias", self.antialias.isChecked())
-    
+        s.setValue("scaleup", self.scaleup.isChecked())
+
     def setCaption(self):
         if self._filename:
             filename = os.path.basename(self._filename)
@@ -170,11 +167,11 @@ class Dialog(QDialog):
             filename = _("<unknown>")
         title = _("Image from {filename}").format(filename = filename)
         self.setWindowTitle(app.caption(title))
-        
-    def setPage(self, page, rect):
+
+    def setPage(self, page, rect, filename):
         self._page = page
         self._rect = rect
-        self._filename = documents.filename(page.document())
+        self._filename = filename
         self.fileDragger.basename = os.path.splitext(os.path.basename(self._filename))[0]
         self.setCaption()
         self.drawImage()
@@ -186,22 +183,26 @@ class Dialog(QDialog):
         options = qpopplerview.RenderOptions()
         options.setPaperColor(self.colorButton.color())
         if self.antialias.isChecked():
-            if popplerqt4:
+            if popplerqt5:
                 options.setRenderHint(
-                    popplerqt4.Poppler.Document.Antialiasing |
-                    popplerqt4.Poppler.Document.TextAntialiasing)
+                    popplerqt5.Poppler.Document.Antialiasing |
+                    popplerqt5.Poppler.Document.TextAntialiasing)
         else:
             options.setRenderHint(0)
-        self._image = self._page.image(self._rect, dpi, dpi, options)
+        m = 2 if self.scaleup.isChecked() else 1
+        i = self._page.image(self._rect, dpi * m, dpi * m , options)
+        if m == 2:
+            i = i.scaled(i.size() / 2, transformMode=Qt.SmoothTransformation)
+        self._image = i
         self.cropImage()
-    
+
     def cropImage(self):
         image = self._image
         if self.crop.isChecked():
             image = image.copy(autoCropRect(image))
         self.imageViewer.setImage(image)
         self.fileDragger.setImage(image)
-    
+
     def copyToClipboard(self):
         QApplication.clipboard().setImage(self.imageViewer.image())
 
@@ -211,7 +212,7 @@ class Dialog(QDialog):
         else:
             filename = 'image.png'
         filename = QFileDialog.getSaveFileName(self,
-            _("Save Image As"), filename)
+            _("Save Image As"), filename)[0]
         if filename:
             if not self.imageViewer.image().save(filename):
                 QMessageBox.critical(self, _("Error"), _(
@@ -220,16 +221,16 @@ class Dialog(QDialog):
                 self.fileDragger.currentFile = filename
 
 
-class FileDragger(widgets.drag.FileDragger):
+class FileDragger(gadgets.drag.FileDragger):
     """Creates an image file on the fly as soon as a drag is started."""
     image = None
     basename = None
     currentFile = None
-    
+
     def setImage(self, image):
         self.image = image
         self.currentFile = None
-        
+
     def filename(self):
         if self.currentFile:
             return self.currentFile
@@ -247,9 +248,9 @@ class FileDragger(widgets.drag.FileDragger):
 
 def autoCropRect(image):
     """Returns a QRect specifying the contents of the QImage.
-    
+
     Edges of the image are trimmed if they have the same color.
-    
+
     """
     # pick the color at most of the corners
     colors = collections.defaultdict(int)

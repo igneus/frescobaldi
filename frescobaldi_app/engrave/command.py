@@ -21,11 +21,10 @@
 Creates the commandline or Job to engrave a music document.
 """
 
-from __future__ import unicode_literals
 
 import os, sys
 
-from PyQt4.QtCore import QSettings
+from PyQt5.QtCore import QSettings
 
 import job
 import documentinfo
@@ -42,19 +41,19 @@ def info(document):
 
 def defaultJob(document, args=None):
     """Return a default job for the document.
-    
+
     The 'args' argument, if given, must be a list of commandline arguments
     that are given to LilyPond, and may enable specific preview modes.
-    
+
     If args is not given, the Job will cause LilyPond to run in Publish mode,
     with point and click turned off.
-    
+
     """
     filename, includepath = documentinfo.info(document).jobinfo(True)
-    
+
     i = info(document)
     j = job.Job()
-    
+
     command = [i.abscommand() or i.command]
     s = QSettings()
     s.beginGroup("lilypond_settings")
@@ -62,23 +61,33 @@ def defaultJob(document, args=None):
         command.append('-ddelete-intermediate-files')
     else:
         command.append('-dno-delete-intermediate-files')
-    
+
     if args:
         command.extend(args)
     else:
+        # publish mode
         command.append('-dno-point-and-click')
-    
-    if s.value("default_output_target", "pdf", type("")) == "svg":
+
+    if s.value("default_output_target", "pdf", str) == "svg":
+        # engrave to SVG
         command.append('-dbackend=svg')
     else:
+        # engrave to PDF
+        if not args:
+            # publish mode
+            if s.value("embed_source_code", False, bool) and i.version() >= (2, 19, 39):
+                command.append('-dembed-source-code')
         command.append('--pdf')
-        
+
+
     command.extend('-I' + path for path in includepath)
     j.directory = os.path.dirname(filename)
     command.append(filename)
     j.command = command
+    j.environment['LD_LIBRARY_PATH'] = i.libdir()
     if s.value("no_translation", False, bool):
         j.environment['LANG'] = 'C'
+        j.environment['LC_ALL'] = 'C'
     j.set_title("{0} {1} [{2}]".format(
         os.path.basename(i.command), i.versionString(), document.documentName()))
     return j

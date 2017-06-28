@@ -21,14 +21,15 @@
 Import non-lilypond file types.
 """
 
-from __future__ import unicode_literals
 
 import os
 
-from PyQt4.QtCore import Qt, QUrl
-from PyQt4.QtGui import QAction, QFileDialog, QKeySequence, QMessageBox, QTextCursor
+from PyQt5.QtCore import Qt, QUrl
+from PyQt5.QtGui import QKeySequence, QTextCursor
+from PyQt5.QtWidgets import QAction, QFileDialog, QMessageBox
 
 import app
+import icons
 import actioncollection
 import actioncollectionmanager
 import plugin
@@ -44,7 +45,7 @@ class FileImport(plugin.MainWindowPlugin):
         ac.import_musicxml.triggered.connect(self.importMusicXML)
         ac.import_midi.triggered.connect(self.importMidi)
         ac.import_abc.triggered.connect(self.importAbc)
-        
+
     def importAll(self):
         """Reads the file type and determines which import to use."""
         filetypes = ';;'.join((
@@ -56,7 +57,7 @@ class FileImport(plugin.MainWindowPlugin):
         ))
         caption = app.caption(_("dialog title", "Import"))
         directory = os.path.dirname(self.mainwindow().currentDocument().url().toLocalFile()) or app.basedir()
-        importfiles = QFileDialog.getOpenFileNames(self.mainwindow(), caption, directory, filetypes)
+        importfiles = QFileDialog.getOpenFileNames(self.mainwindow(), caption, directory, filetypes)[0]
         if not importfiles:
             return # the dialog was cancelled by user
         for imp in importfiles:
@@ -66,7 +67,7 @@ class FileImport(plugin.MainWindowPlugin):
                 QMessageBox.critical(None, _("Error"),
                     _("The file {filename} could not be converted. "
                       "Wrong file type.").format(filename=imp))
-        
+
     def isImportable(self, infile):
         """Check if the file is importable."""
         ext = os.path.splitext(infile)[1]
@@ -74,10 +75,10 @@ class FileImport(plugin.MainWindowPlugin):
             return True
         else:
             return False
-            
-    def openDialog(self, infile): 
+
+    def openDialog(self, infile):
         """Check file type and open the proper dialog."""
-        self.importfile = infile   
+        self.importfile = infile
         ext = os.path.splitext(infile)[1]
         if ext == '.xml' or ext == '.mxl':
             self.openMusicxmlDialog()
@@ -92,11 +93,11 @@ class FileImport(plugin.MainWindowPlugin):
             _("MusicXML Files"), _("All Files"))
         caption = app.caption(_("dialog title", "Import a MusicXML file"))
         directory = os.path.dirname(self.mainwindow().currentDocument().url().toLocalFile()) or app.basedir()
-        self.importfile = QFileDialog.getOpenFileName(self.mainwindow(), caption, directory, filetypes)
+        self.importfile = QFileDialog.getOpenFileName(self.mainwindow(), caption, directory, filetypes)[0]
         if not self.importfile:
             return # the dialog was cancelled by user
         self.openMusicxmlDialog()
-    
+
     def openMusicxmlDialog(self):
         try:
             dlg = self._importDialog = self.mxmlDlg
@@ -106,18 +107,18 @@ class FileImport(plugin.MainWindowPlugin):
             dlg.addAction(self.mainwindow().actionCollection.help_whatsthis)
             dlg.setWindowModality(Qt.WindowModal)
         self.runImport()
-        
+
     def importMidi(self):
         """Opens an midi file. Converts it to ly by using midi2ly."""
         filetypes = '{0} (*.midi *.mid);;{1} (*)'.format(
             _("Midi Files"), _("All Files"))
         caption = app.caption(_("dialog title", "Import a midi file"))
         directory = os.path.dirname(self.mainwindow().currentDocument().url().toLocalFile()) or app.basedir()
-        self.importfile = QFileDialog.getOpenFileName(self.mainwindow(), caption, directory, filetypes)
+        self.importfile = QFileDialog.getOpenFileName(self.mainwindow(), caption, directory, filetypes)[0]
         if not self.importfile:
             return # the dialog was cancelled by user
         self.openMidiDialog()
-    
+
     def openMidiDialog(self):
         try:
             dlg = self._importDialog = self.midDlg
@@ -127,14 +128,14 @@ class FileImport(plugin.MainWindowPlugin):
             dlg.addAction(self.mainwindow().actionCollection.help_whatsthis)
             dlg.setWindowModality(Qt.WindowModal)
         self.runImport()
-        
+
     def importAbc(self):
         """Opens an abc file. Converts it to ly by using abc2ly."""
         filetypes = '{0} (*.abc);;{1} (*)'.format(
             _("ABC Files"), _("All Files"))
         caption = app.caption(_("dialog title", "Import an abc file"))
         directory = os.path.dirname(self.mainwindow().currentDocument().url().toLocalFile()) or app.basedir()
-        self.importfile = QFileDialog.getOpenFileName(self.mainwindow(), caption, directory, filetypes)
+        self.importfile = QFileDialog.getOpenFileName(self.mainwindow(), caption, directory, filetypes)[0]
         if not self.importfile:
             return # the dialog was cancelled by user
         self.openAbcDialog()
@@ -148,7 +149,7 @@ class FileImport(plugin.MainWindowPlugin):
             dlg.addAction(self.mainwindow().actionCollection.help_whatsthis)
             dlg.setWindowModality(Qt.WindowModal)
         self.runImport()
-    
+
     def runImport(self):
         """Generic execution of all import dialogs."""
         dlg = self._importDialog
@@ -179,8 +180,8 @@ class FileImport(plugin.MainWindowPlugin):
         doc.setUrl(QUrl.fromLocalFile(filename))
         doc.setModified(True)
         self.mainwindow().setCurrentDocument(doc)
-        return doc       
-        
+        return doc
+
     def postImport(self, settings, doc):
         """Adaptations of the source after running musicxml2ly
 
@@ -190,7 +191,7 @@ class FileImport(plugin.MainWindowPlugin):
         Remove duration scaling
         Engrave directly
         """
-        cursor = QTextCursor(doc)		
+        cursor = QTextCursor(doc)
         if settings[0]:
             import reformat
             reformat.reformat(cursor)
@@ -201,11 +202,11 @@ class FileImport(plugin.MainWindowPlugin):
         if settings[2]:
             cursor.select(QTextCursor.Document)
             from rhythm import rhythm
-            rhythm.rhythm_remove_fraction_scaling(cursor)       
+            rhythm.rhythm_remove_fraction_scaling(cursor)
         if settings[3]:
             import engrave
             engrave.engraver(self.mainwindow()).engrave('preview', doc, False)
-        
+
 
 
 class Actions(actioncollection.ActionCollection):
@@ -215,6 +216,8 @@ class Actions(actioncollection.ActionCollection):
         self.import_musicxml = QAction(parent)
         self.import_midi = QAction(parent)
         self.import_abc = QAction(parent)
+
+        self.import_all.setIcon(icons.get("document-import"))
 
     def translateUI(self):
         self.import_all.setText(_("Import..."))

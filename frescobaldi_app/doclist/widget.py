@@ -21,28 +21,25 @@
 The documents list tool widget.
 """
 
-from __future__ import unicode_literals
 
 import os
 
-from PyQt4.QtCore import QSettings, Qt, QUrl
-from PyQt4.QtGui import QItemSelectionModel, QMenu, QTreeWidget, QTreeWidgetItem
+from PyQt5.QtCore import QItemSelectionModel, QSettings, Qt, QUrl
+from PyQt5.QtWidgets import QMenu, QTreeWidget, QTreeWidgetItem
 
 import app
 import util
 import qutil
-
 import icons
-import jobmanager
-import jobattributes
+import documenticon
 import engrave
 
 
 def path(url):
     """Returns the path, as a string, of the url to group documents.
-    
+
     Returns None if the document is nameless.
-    
+
     """
     if url.isEmpty():
         return None
@@ -70,7 +67,7 @@ class Widget(QTreeWidget):
         self.itemSelectionChanged.connect(self.slotItemSelectionChanged)
         app.settingsChanged.connect(self.populate)
         self.populate()
-    
+
     def populate(self):
         self._group = QSettings().value("document_list/group_by_folder", False, bool)
         self.clear()
@@ -83,11 +80,11 @@ class Widget(QTreeWidget):
             doc = self.parentWidget().mainwindow().currentDocument()
             if doc:
                 self.selectDocument(doc)
-        
+
     def addDocument(self, doc):
         self._items[doc] = QTreeWidgetItem(self)
         self.setDocumentStatus(doc)
-    
+
     def removeDocument(self, doc):
         i = self._items.pop(doc)
         if not self._group:
@@ -98,7 +95,7 @@ class Widget(QTreeWidget):
         if parent.childCount() == 0:
             self.takeTopLevelItem(self.indexOfTopLevelItem(parent))
             del self._paths[parent._path]
-    
+
     def selectDocument(self, doc):
         self.setCurrentItem(self._items[doc], 0, QItemSelectionModel.ClearAndSelect)
 
@@ -112,23 +109,14 @@ class Widget(QTreeWidget):
             return
         # set properties according to document
         i.setText(0, doc.documentName())
-        job = jobmanager.job(doc)
-        if job and job.is_running() and not jobattributes.get(job).hidden:
-            icon = 'lilypond-run'
-        elif engrave.Engraver.instance(self.parentWidget().mainwindow()).stickyDocument() is doc:
-            icon = 'pushpin'
-        elif doc.isModified():
-            icon = 'document-save'
-        else:
-            icon = 'text-plain'
-        i.setIcon(0, icons.get(icon))
+        i.setIcon(0, documenticon.icon(doc, self.parentWidget().mainwindow()))
         i.setToolTip(0, path(doc.url()))
         # handle ordering in groups if desired
         if self._group:
             self.groupDocument(doc)
         else:
             self.sortItems(0, Qt.AscendingOrder)
-    
+
     def groupDocument(self, doc):
         """Called, if grouping is enabled, to group the document."""
         i = self._items[doc]
@@ -154,29 +142,29 @@ class Widget(QTreeWidget):
             self.takeTopLevelItem(self.indexOfTopLevelItem(i))
         new_parent.addChild(i)
         new_parent.sortChildren(0, Qt.AscendingOrder)
-    
+
     def document(self, item):
         """Returns the document for item."""
         for d, i in self._items.items():
             if i == item:
                 return d
-        
+
     def slotItemSelectionChanged(self):
         if len(self.selectedItems()) == 1:
             doc = self.document(self.selectedItems()[0])
             if doc:
                 self.parentWidget().mainwindow().setCurrentDocument(doc)
-    
+
     def contextMenuEvent(self, ev):
         item = self.itemAt(ev.pos())
         if not item:
             return
-        
+
         mainwindow = self.parentWidget().mainwindow()
-        
+
         selection = self.selectedItems()
         doc = self.document(item)
-        
+
         if len(selection) <= 1 and doc:
             # a single document is right-clicked
             import documentcontextmenu
@@ -184,12 +172,12 @@ class Widget(QTreeWidget):
             menu.exec_(doc, ev.globalPos())
             menu.deleteLater()
             return
-        
+
         menu = QMenu(mainwindow)
         save = menu.addAction(icons.get('document-save'), '')
         menu.addSeparator()
         close = menu.addAction(icons.get('document-close'), '')
-        
+
         if len(selection) > 1:
             # multiple documents are selected
             save.setText(_("Save selected documents"))
@@ -205,7 +193,7 @@ class Widget(QTreeWidget):
                 # the "Untitled" group is right-clicked
                 save.setText(_("Save all untitled documents"))
                 close.setText(_("Close all untitled documents"))
-        
+
         @save.triggered.connect
         def savedocuments():
             for d in documents:
@@ -213,13 +201,13 @@ class Widget(QTreeWidget):
                     mainwindow.setCurrentDocument(d)
                 if not mainwindow.saveDocument(d):
                     break
-        
+
         @close.triggered.connect
         def close_documents():
             for d in documents:
                 if not mainwindow.closeDocument(d):
                     break
-        
+
         menu.exec_(ev.globalPos())
         menu.deleteLater()
 

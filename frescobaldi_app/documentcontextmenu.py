@@ -22,13 +22,12 @@ A context menu with actions for a Document.
 Used by the tabbar and the doclist tool.
 """
 
-from __future__ import unicode_literals
 
 import weakref
 import os
 
-from PyQt4.QtGui import QMenu, QMessageBox
-from PyQt4.QtCore import QUrl
+from PyQt5.QtWidgets import QMenu, QMessageBox
+from PyQt5.QtCore import QUrl
 
 import app
 import icons
@@ -55,15 +54,14 @@ class DocumentContextMenu(QMenu):
         self.doc_toggle_sticky = self.addAction(icons.get('pushpin'), '')
         self.doc_toggle_sticky.setCheckable(True)
 
-        self.addSeparator()
-        self.doc_open_inadiutorium_variations = self.addAction(icons.get('document-open'), '')
-
         self.doc_save.triggered.connect(self.docSave)
         self.doc_save_as.triggered.connect(self.docSaveAs)
         self.doc_close.triggered.connect(self.docClose)
         self.doc_close_others.triggered.connect(self.docCloseOther)
         self.doc_toggle_sticky.triggered.connect(self.docToggleSticky)
 
+        self.addSeparator()
+        self.doc_open_inadiutorium_variations = self.addAction(icons.get('document-open'), '')
         self.doc_open_inadiutorium_variations.triggered.connect(self.docOpenInAdiutoriumVariations)
 
     def updateActions(self):

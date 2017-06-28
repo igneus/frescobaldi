@@ -21,11 +21,10 @@
 Sets the user interface style.
 """
 
-from __future__ import unicode_literals
 
 
-from PyQt4.QtCore import QSettings
-from PyQt4.QtGui import QStyleFactory
+from PyQt5.QtCore import QSettings
+from PyQt5.QtWidgets import QStyleFactory
 
 import app
 
@@ -38,8 +37,8 @@ def keys():
 
 def setStyle():
     global _system_default
-    
-    style = QSettings().value("guistyle", "", type("")).lower()
+
+    style = QSettings().value("guistyle", "", str).lower()
     if style not in keys():
         style = _system_default
     if style != app.qApp.style().objectName():
@@ -49,7 +48,7 @@ def setStyle():
 def initialize():
     """Initializes the GUI style setup. Called op app startup."""
     global _system_default
-    
+
     _system_default = app.qApp.style().objectName()
     app.settingsChanged.connect(setStyle)
     setStyle()

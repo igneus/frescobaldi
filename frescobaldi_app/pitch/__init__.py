@@ -21,9 +21,9 @@
 Tools to edit pitch of selected music.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtGui import QAction, QActionGroup, QMenu
+from PyQt5.QtCore import QSettings
+from PyQt5.QtWidgets import QAction, QActionGroup, QMenu
 
 import app
 import actioncollection
@@ -54,38 +54,58 @@ class Pitch(plugin.MainWindowPlugin):
         ac.pitch_transpose.triggered.connect(self.transpose)
         ac.pitch_modal_transpose.triggered.connect(self.modalTranspose)
         ac.pitch_mode_shift.triggered.connect(self.modeShift)
-    
+        ac.pitch_simplify.triggered.connect(self.simplifyAccidentals)
+        self.readSettings()
+        app.aboutToQuit.connect(self.writeSettings)
+
+    def get_absolute(self, document):
+        """Return True when the first pitch in a \\relative expression without
+        startpitch may be considered absolute.
+
+        """
+        import documentinfo
+        return (self.actionCollection.pitch_relative_assume_first_pitch_absolute.isChecked()
+            or documentinfo.docinfo(document).version() >= (2, 18))
+
     def rel2abs(self):
         from . import pitch
         cursor = self.mainwindow().textCursor()
-        pitch.rel2abs(cursor)
-    
+        pitch.rel2abs(cursor, self.get_absolute(cursor.document()))
+
     def abs2rel(self):
+        startpitch = self.actionCollection.pitch_relative_write_startpitch.isChecked()
         from . import pitch
         cursor = self.mainwindow().textCursor()
-        pitch.abs2rel(cursor)
-    
+        pitch.abs2rel(cursor, startpitch, self.get_absolute(cursor.document()))
+
     def transpose(self):
         from . import pitch
         cursor = self.mainwindow().textCursor()
         transposer = pitch.getTransposer(cursor.document(), self.mainwindow())
         if transposer:
-            pitch.transpose(cursor, transposer, self.mainwindow())
-    
+            pitch.transpose(cursor, transposer, self.mainwindow(), self.get_absolute(cursor.document()))
+
     def modalTranspose(self):
         from . import pitch
         cursor = self.mainwindow().textCursor()
         transposer = pitch.getModalTransposer(cursor.document(), self.mainwindow())
         if transposer:
             pitch.transpose(cursor, transposer, self.mainwindow())
-            
+
     def modeShift(self):
         from . import pitch
         cursor = self.mainwindow().textCursor()
         transposer = pitch.getModeShifter(cursor.document(), self.mainwindow())
         if transposer:
             pitch.transpose(cursor, transposer, self.mainwindow())
-    
+
+    def simplifyAccidentals(self):
+        from . import pitch
+        import ly.pitch.transpose
+        cursor = self.mainwindow().textCursor()
+        transposer = ly.pitch.transpose.Simplifier()
+        pitch.transpose(cursor, transposer, self.mainwindow(), self.get_absolute(cursor.document()))
+
     def setLanguageMenu(self):
         """Called when the menu is shown; selects the correct language."""
         import documentinfo
@@ -95,11 +115,27 @@ class Pitch(plugin.MainWindowPlugin):
             if a.objectName() == lang:
                 a.setChecked(True)
                 break
-    
+
     def changeLanguage(self, action):
         from . import pitch
         cursor = self.mainwindow().textCursor()
         pitch.changeLanguage(cursor, action.objectName())
+
+    def readSettings(self):
+        s = QSettings()
+        s.beginGroup("pitch-menu")
+        self.actionCollection.pitch_relative_assume_first_pitch_absolute.setChecked(
+            s.value("relative-first-pitch-absolute", False, bool))
+        self.actionCollection.pitch_relative_write_startpitch.setChecked(
+            s.value("relative-write-startpitch", True, bool))
+
+    def writeSettings(self):
+        s = QSettings()
+        s.beginGroup("pitch-menu")
+        s.setValue("relative-first-pitch-absolute",
+            self.actionCollection.pitch_relative_assume_first_pitch_absolute.isChecked())
+        s.setValue("relative-write-startpitch",
+            self.actionCollection.pitch_relative_write_startpitch.isChecked())
 
 
 class Actions(actioncollection.ActionCollection):
@@ -111,12 +147,16 @@ class Actions(actioncollection.ActionCollection):
         self.pitch_transpose = QAction(parent)
         self.pitch_modal_transpose = QAction(parent)
         self.pitch_mode_shift = QAction(parent)
+        self.pitch_simplify = QAction(parent)
+        self.pitch_relative_assume_first_pitch_absolute = QAction(parent, checkable=True)
+        self.pitch_relative_write_startpitch = QAction(parent, checkable=True)
 
         self.pitch_language.setIcon(icons.get('tools-pitch-language'))
         self.pitch_transpose.setIcon(icons.get('tools-transpose'))
         self.pitch_modal_transpose.setIcon(icons.get('tools-transpose'))
         self.pitch_mode_shift.setIcon(icons.get('tools-transpose'))
-        
+        self.pitch_simplify.setIcon(icons.get('tools-transpose'))
+
     def translateUI(self):
         self.pitch_language.setText(_("Pitch Name &Language"))
         self.pitch_language.setToolTip(_(
@@ -139,4 +179,19 @@ class Actions(actioncollection.ActionCollection):
         self.pitch_mode_shift.setText(_("Mode shift..."))
         self.pitch_mode_shift.setToolTip(_(
             "Transforms all notes in the document or selection to an optional mode."))
-        
+        self.pitch_simplify.setText(_("Simplify Accidentals"))
+        self.pitch_simplify.setToolTip(_(
+            "Replaces notes with accidentals as much as possible with natural neighbors."))
+        self.pitch_relative_assume_first_pitch_absolute.setText(_(
+            "First pitch in \\relative {...} is absolute"))
+        self.pitch_relative_assume_first_pitch_absolute.setToolTip(_(
+            "If checked, always assume that the first pitch of a \\relative {...}\n"
+            "expression without startpitch is absolute. Otherwise, Frescobaldi\n"
+            "only assumes this when the LilyPond version >= 2.18."))
+        self.pitch_relative_write_startpitch.setText(_(
+            "Write \\relative with startpitch"))
+        self.pitch_relative_write_startpitch.setToolTip(_(
+            "If checked, when converting absolute music to relative, a startpitch\n"
+            "is added. Otherwise, no starting pitch is written."))
+
+

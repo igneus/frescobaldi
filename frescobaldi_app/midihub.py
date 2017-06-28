@@ -35,7 +35,6 @@ not with portmidi directly.
 
 """
 
-from __future__ import unicode_literals
 
 
 import portmidi
@@ -59,7 +58,7 @@ def restart():
     portmidi.quit()
     portmidi.init()
     settingsChanged()
-    
+
 def refresh_ports():
     """Refreshes the port list."""
     restart()
@@ -126,7 +125,7 @@ def output_by_name(name):
             return portmidi.Output(n)
 
 def input_by_name(name):
-    """Returns a portmidi.Output instance for name."""
+    """Returns a portmidi.Input instance for name."""
     for n in range(get_count()):
         i = portmidi.get_device_info(n)
         input_name = _decode_name(i.name)

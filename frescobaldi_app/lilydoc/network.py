@@ -21,8 +21,8 @@
 Network-related utility functions for LilyPond Documentation.
 """
 
-from PyQt4.QtCore import QSettings
-from PyQt4.QtNetwork import QNetworkReply, QNetworkRequest
+from PyQt5.QtCore import QSettings
+from PyQt5.QtNetwork import QNetworkReply, QNetworkRequest
 
 import app
 import po
@@ -47,22 +47,22 @@ def get(url):
 
 def langs():
     """Returns a list of language codes wished for documentation.
-    
+
     If the list is empty, english (untranslated) is assumed.
     If a language code also has a country suffix, a hyphen will be used
     as separator (as required per RFC2616, Accept-Language header).
-    
+
     """
     s = QSettings()
     langs = []
-    lang = s.value("documentation/language", "default", type(""))
+    lang = s.value("documentation/language", "default", str)
 
     if lang == "default":
-        lang = s.value("language", "", type(""))
+        lang = s.value("language", "", str)
     if lang and lang != "C":
         langs.append(lang)
     langs.extend(po.setup.preferred())
-    
+
     # now fixup the list, remove dups and
     # language/country codes in Accept-Language headers must have '-' and not '_'
     result = []
@@ -85,7 +85,7 @@ class NetworkAccessManager(networkaccessmanager.NetworkAccessManager):
         super(NetworkAccessManager, self).__init__(parent)
         app.settingsChanged.connect(self.readSettings)
         self.readSettings()
-    
+
     def readSettings(self):
         l = langs()
         if 'en' not in l:

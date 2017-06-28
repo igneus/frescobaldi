@@ -21,17 +21,15 @@
 LilyPond preferences page
 """
 
-from __future__ import unicode_literals
 
 import os
 import sys
 
-from PyQt4.QtCore import QSettings, Qt
-from PyQt4.QtGui import (QAbstractItemView, QCheckBox, QDialog,
-                         QDialogButtonBox, QFileDialog, QGridLayout,
-                         QHBoxLayout, QLabel, QLineEdit, QListWidgetItem,
-                         QPushButton, QRadioButton, QTabWidget, QVBoxLayout,
-                         QWidget)
+from PyQt5.QtCore import QSettings, Qt
+from PyQt5.QtWidgets import (
+    QAbstractItemView, QCheckBox, QDialog, QDialogButtonBox, QFileDialog,
+    QGridLayout, QHBoxLayout, QLabel, QLineEdit, QListWidgetItem,
+    QPushButton, QRadioButton, QTabWidget, QVBoxLayout, QWidget)
 
 import app
 import userguide
@@ -65,10 +63,10 @@ class LilyPondPrefs(preferences.ScrolledGroupsPage):
 class Versions(preferences.Group):
     def __init__(self, page):
         super(Versions, self).__init__(page)
-        
+
         layout = QVBoxLayout()
         self.setLayout(layout)
-        
+
         self.instances = InfoList(self)
         self.instances.changed.connect(self.changed)
         self.instances.defaultButton.clicked.connect(self.defaultButtonClicked)
@@ -77,13 +75,13 @@ class Versions(preferences.Group):
         layout.addWidget(self.auto)
         app.translateUI(self)
         userguide.openWhatsThis(self)
-    
+
     def defaultButtonClicked(self):
         self._defaultCommand = self.instances.listBox.currentItem()._info.command
         for item in self.instances.items():
             item.display()
         self.changed.emit()
-            
+
     def translateUI(self):
         self.setTitle(_("LilyPond versions to use"))
         self.auto.setText(_("Automatically choose LilyPond version from document"))
@@ -96,7 +94,7 @@ class Versions(preferences.Group):
     def loadSettings(self):
         s = settings()
         default = lilypondinfo.default()
-        self._defaultCommand = s.value("default", default.command, type(""))
+        self._defaultCommand = s.value("default", default.command, str)
         self.auto.setChecked(s.value("autoversion", False, bool))
         infos = sorted(lilypondinfo.infos(), key=lambda i: i.version())
         if not infos:
@@ -107,7 +105,7 @@ class Versions(preferences.Group):
             if item._info.command == self._defaultCommand:
                 self.instances.setCurrentItem(item)
                 break
-        
+
     def saveSettings(self):
         infos = [item._info for item in self.instances.items()]
         if infos:
@@ -133,14 +131,14 @@ class InfoList(widgets.listedit.ListEdit):
         self.layout().addWidget(self.defaultButton, 3, 1)
         self.layout().addWidget(self.listBox, 0, 0, 5, 1)
         self.listBox.itemSelectionChanged.connect(self._selectionChanged)
-        
+
     def _selectionChanged(self):
         self.defaultButton.setEnabled(bool(self.listBox.currentItem()))
-        
+
     def translateUI(self):
         super(InfoList, self).translateUI()
         self.defaultButton.setText(_("Set as &Default"))
-    
+
     def infoDialog(self):
         try:
             return self._infoDialog
@@ -150,7 +148,7 @@ class InfoList(widgets.listedit.ListEdit):
 
     def createItem(self):
         return InfoItem(lilypondinfo.LilyPondInfo("lilypond"))
-    
+
     def openEditor(self, item):
         dlg = self.infoDialog()
         dlg.loadInfo(item._info)
@@ -166,13 +164,13 @@ class InfoList(widgets.listedit.ListEdit):
     def itemChanged(self, item):
         item.display()
         self.setCurrentItem(item)
-        
+
 
 class InfoItem(QListWidgetItem):
     def __init__(self, info):
         super(InfoItem, self).__init__()
         self._info = info
-    
+
     def display(self):
         text = self._info.prettyName()
         if self._info.version():
@@ -188,7 +186,7 @@ class InfoDialog(QDialog):
     def __init__(self, parent):
         super(InfoDialog, self).__init__(parent)
         self.setWindowModality(Qt.WindowModal)
-        
+
         layout = QVBoxLayout()
         layout.setSpacing(10)
         self.setLayout(layout)
@@ -198,12 +196,12 @@ class InfoDialog(QDialog):
         tab_toolcommands = QWidget()
         self.tab.addTab(tab_general, "")
         self.tab.addTab(tab_toolcommands, "")
-        
+
         # general tab
         vbox = QVBoxLayout()
         vbox.setSpacing(4)
         tab_general.setLayout(vbox)
-        
+
         hbox = QHBoxLayout()
         self.lilyname = QLineEdit()
         self.lilynameLabel = l = QLabel()
@@ -211,14 +209,14 @@ class InfoDialog(QDialog):
         hbox.addWidget(l)
         hbox.addWidget(self.lilyname)
         vbox.addLayout(hbox)
-        
+
         self.lilypond = widgets.urlrequester.UrlRequester()
         self.lilypond.setFileMode(QFileDialog.ExistingFile)
         self.lilypondLabel = l = QLabel()
         l.setBuddy(self.lilypond)
         vbox.addWidget(l)
         vbox.addWidget(self.lilypond)
-        
+
         self.auto = QCheckBox()
         vbox.addWidget(self.auto)
         vbox.addStretch(1)
@@ -227,7 +225,7 @@ class InfoDialog(QDialog):
         grid = QGridLayout()
         grid.setSpacing(4)
         tab_toolcommands.setLayout(grid)
-        
+
         self.ly_tool_widgets = {}
         row = 0
         for name, gui in self.toolnames():
@@ -238,19 +236,19 @@ class InfoDialog(QDialog):
             grid.addWidget(w, row, 1)
             row += 1
             self.ly_tool_widgets[name] = (l, w)
-        
+
         layout.addWidget(self.tab)
         layout.addWidget(widgets.Separator())
         b = self.buttons = QDialogButtonBox(self)
         layout.addWidget(b)
-        
+
         b.setStandardButtons(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         b.accepted.connect(self.accept)
         b.rejected.connect(self.reject)
         userguide.addButton(b, "prefs_lilypond")
         app.translateUI(self)
         qutil.saveDialogSize(self, "/preferences/lilypond/lilypondinfo/dialog/size")
-        
+
     def toolnames(self):
         """Yield tuples (name, GUI name) for the sub tools we allow to be configured."""
         yield 'convert-ly', _("Convert-ly:")
@@ -258,7 +256,7 @@ class InfoDialog(QDialog):
         yield 'midi2ly', _("Midi2ly:")
         yield 'musicxml2ly', _("MusicXML2ly:")
         yield 'abc2ly', _("ABC2ly:")
-    
+
     def translateUI(self):
         self.setWindowTitle(app.caption(_("LilyPond")))
         self.lilynameLabel.setText(_("Label:"))
@@ -270,7 +268,7 @@ class InfoDialog(QDialog):
         self.tab.setTabText(1, _("Tool Commands"))
         for name, gui in self.toolnames():
             self.ly_tool_widgets[name][0].setText(gui)
-        
+
     def loadInfo(self, info):
         """Takes over settings for the dialog from the LilyPondInfo object."""
         self.lilyname.setText(info.name)
@@ -297,12 +295,13 @@ class InfoDialog(QDialog):
 class Running(preferences.Group):
     def __init__(self, page):
         super(Running, self).__init__(page)
-        
+
         layout = QVBoxLayout()
         self.setLayout(layout)
-        
+
         self.saveDocument = QCheckBox(clicked=self.changed)
         self.deleteFiles = QCheckBox(clicked=self.changed)
+        self.embedSourceCode = QCheckBox(clicked=self.changed)
         self.noTranslation = QCheckBox(clicked=self.changed)
         self.includeLabel = QLabel()
         self.include = widgets.listedit.FilePathEdit()
@@ -310,11 +309,12 @@ class Running(preferences.Group):
         self.include.changed.connect(self.changed)
         layout.addWidget(self.saveDocument)
         layout.addWidget(self.deleteFiles)
+        layout.addWidget(self.embedSourceCode)
         layout.addWidget(self.noTranslation)
         layout.addWidget(self.includeLabel)
         layout.addWidget(self.include)
         app.translateUI(self)
-        
+
     def translateUI(self):
         self.setTitle(_("Running LilyPond"))
         self.saveDocument.setText(_("Save document if possible"))
@@ -324,24 +324,31 @@ class Running(preferences.Group):
         self.deleteFiles.setText(_("Delete intermediate output files"))
         self.deleteFiles.setToolTip(_(
             "If checked, LilyPond will delete intermediate PostScript files."))
+        self.embedSourceCode.setText(_("Embed Source Code files in publish mode"))
+        self.embedSourceCode.setToolTip(_(
+            "If checked, the LilyPond source files will be embedded in the PDF\n"
+            "when LilyPond is started in publish mode.\n"
+            "This feature is available since LilyPond 2.19.39."))
         self.noTranslation.setText(_("Run LilyPond with English messages"))
         self.noTranslation.setToolTip(_(
             "If checked, LilyPond's output messages will be in English.\n"
             "This can be useful for bug reports."))
         self.includeLabel.setText(_("LilyPond include path:"))
-    
+
     def loadSettings(self):
         s = settings()
         self.saveDocument.setChecked(s.value("save_on_run", False, bool))
         self.deleteFiles.setChecked(s.value("delete_intermediate_files", True, bool))
+        self.embedSourceCode.setChecked(s.value("embed_source_code", False, bool))
         self.noTranslation.setChecked(s.value("no_translation", False, bool))
         include_path = qsettings.get_string_list(s, "include_path")
         self.include.setValue(include_path)
-        
+
     def saveSettings(self):
         s = settings()
         s.setValue("save_on_run", self.saveDocument.isChecked())
         s.setValue("delete_intermediate_files", self.deleteFiles.isChecked())
+        s.setValue("embed_source_code", self.embedSourceCode.isChecked())
         s.setValue("no_translation", self.noTranslation.isChecked())
         s.setValue("include_path", self.include.value())
 
@@ -349,19 +356,19 @@ class Running(preferences.Group):
 class Target(preferences.Group):
     def __init__(self, page):
         super(Target, self).__init__(page)
-        
+
         layout = QGridLayout()
         self.setLayout(layout)
-        
+
         self.targetPDF = QRadioButton(toggled=page.changed)
         self.targetSVG = QRadioButton(toggled=page.changed)
         self.openDefaultView = QCheckBox(clicked=page.changed)
-        
+
         layout.addWidget(self.targetPDF, 0, 0)
         layout.addWidget(self.targetSVG, 0, 1)
         layout.addWidget(self.openDefaultView, 1, 0, 1, 5)
         app.translateUI(self)
-        
+
     def translateUI(self):
         self.setTitle(_("Default output format"))
         self.targetPDF.setText(_("PDF"))
@@ -374,10 +381,10 @@ class Target(preferences.Group):
         self.openDefaultView.setToolTip(_(
             "Shows the PDF or SVG music view when a compile job finishes "
             "successfully."))
-    
+
     def loadSettings(self):
         s = settings()
-        target = s.value("default_output_target", "pdf", type(""))
+        target = s.value("default_output_target", "pdf", str)
         if target == "svg":
             self.targetSVG.setChecked(True)
             self.targetPDF.setChecked(False)
@@ -385,7 +392,7 @@ class Target(preferences.Group):
             self.targetSVG.setChecked(False)
             self.targetPDF.setChecked(True)
         self.openDefaultView.setChecked(s.value("open_default_view", True, bool))
-        
+
     def saveSettings(self):
         s = settings()
         if self.targetSVG.isChecked():

@@ -21,14 +21,13 @@
 The global things in Frescobaldi.
 """
 
-from __future__ import unicode_literals
 from __future__ import print_function
 
 import os
 import sys
 
-from PyQt4.QtCore import QSettings, QThread
-from PyQt4.QtGui import QApplication
+from PyQt5.QtCore import QSettings, QThread
+from PyQt5.QtWidgets import QApplication
 
 import appinfo
 
@@ -63,9 +62,9 @@ jobFinished = Signal()          # (Document, Job, bool success)
 
 def activeWindow():
     """Return the currently active MainWindow.
-    
+
     Only returns None if there are no windows at all.
-    
+
     """
     if windows:
         w = QApplication.activeWindow()
@@ -75,9 +74,9 @@ def activeWindow():
 
 def openUrl(url, encoding=None):
     """Returns a Document instance for the given QUrl.
-    
+
     If there is already a document with that url, it is returned.
-    
+
     """
     d = findDocument(url)
     if not d:
@@ -99,9 +98,9 @@ def openUrl(url, encoding=None):
 
 def findDocument(url):
     """Returns a Document instance for the given QUrl if already loaded.
-    
+
     Returns None if no document with given url exists or if the url is empty.
-    
+
     """
     if not url.isEmpty():
         for d in documents:
@@ -124,13 +123,13 @@ def instantiate():
 
 def oninit(func):
     """Call specified function on QApplication instantiation.
-    
+
     If the QApplication already has been instantiated, the function is called
     directly.
-    
+
     As this function returns the specified function, you can use this as a
     decorator.
-    
+
     """
     if qApp:
         func()
@@ -153,14 +152,14 @@ def restart():
         args = [python_executable] + args
     import subprocess
     subprocess.Popen(args)
-    
+
 def translateUI(obj, priority=0):
     """Translates texts in the object.
-    
+
     Texts are translated again if the language is changed.
     The object must have a translateUI() method.  It is
     also called by this function.
-    
+
     """
     languageChanged.connect(obj.translateUI, priority)
     obj.translateUI()
@@ -171,9 +170,9 @@ def caption(title):
 
 def filetypes(extension=None):
     """Returns a list of supported filetypes.
-    
+
     If a type matches extension, it is placed first.
-    
+
     """
     have, havenot = [], []
     for patterns, name in (
@@ -202,10 +201,10 @@ def basedir():
     import sessions
     conf = sessions.currentSessionGroup()
     if conf:
-        basedir = conf.value("basedir", "", type(""))
+        basedir = conf.value("basedir", "", str)
         if basedir:
             return basedir
-    return QSettings().value("basedir", "", type(""))
+    return QSettings().value("basedir", "", str)
 
 def settings(name):
     """Returns a QSettings object referring a file in ~/.config/frescobaldi/"""
@@ -229,3 +228,11 @@ def displayhook(obj):
     if obj is not None:
         print(repr(obj))
 
+_is_git_controlled = None
+
+def is_git_controlled():
+    global _is_git_controlled
+    if _is_git_controlled is None:
+        import vcs
+        _is_git_controlled = vcs.app_is_git_controlled()
+    return _is_git_controlled

@@ -2,10 +2,127 @@ ChangeLog of Frescobaldi, http://www.frescobaldi.org/
 =====================================================
 
 
-Changes in 2.18.2 -- 
+Changes in 3.0.1 --
+
+* New features:
+  - New "First System Only" option in Custom Engrave
+* Bug fixes:
+  - fixed #895 seeking in MIDI player during playing stops sound
+  - fixed #768, now paper orientation is properly handled in New Score Wizard
+* Improvements:
+  - Smarter behaviour of the autocompletion popup
+
+Changes in 3.0.0 -- February 17th, 2017
+
+* Requirement changes:
+  - Frescobaldi now requires Python3.2+, Qt5, PyQt5, python-poppler-qt5
+
+* New features:
+  - Zoom with pinch gesture in Music View, contributed by David Rydh
+  - An option (enabled by default) to move the cursor to the end of the line
+    when PageDown is pressed on the last line, and to move the cursor to the
+    start of the first line if PageUp is pressed on the first line
+* Improvements:
+  - Retina display support in Music View, contributed by David Rydh
+
+
+Changes in 2.20.0 -- February 17th, 2017
+
+* New features:
+  - New Manuscript viewer tool, displaying an "engraver's copy",
+    contributed by Peter Bjuhr and Urs Liska
+  - Copy selected text in Music View
+  - New command Edit->Move to include file...
+  - New quick remove actions to remove beams and ligatures from selected music
+  - Search tool in the keyboard shortcuts preferences page (#690)
+* Improvements:
+  - Fit Width in Music View now fits two pages in width, if in two-page mode
+  - the Music View now remembers the page layout mode
+  - Jump to next or previous bookmark now respects surrounding lines setting
+  - Better default save path, looking at last edited document (#162)
+* Bug fixes:
+  - fix #716 position of open document tab bar changes on engrave
+  - Midi input fixes by David Rydh:
+    * fix #797 and #853, now honour Midi input port setting
+    * in Midi input, ces and bis now have the correct octave
+    * fix interruption of Midi input by other events than note events
+  - Midi input now uses correct channel, fix by David Kastrup
+  - fix #857 UnicodeDecodeError on some types of \displayMusic command output
+  - fix #891 QTextBlock not hashable anymore
+  - fix #862 midi not loaded on first document load
+* Translations:
+  - new Swedish translation contributed by Dag Odenhall
+  - updated Dutch by Wilbert Berendsen
+  - updated Italian by Federico Bruni
+  - updated Spanish by Francisco Vila
+  - updated German by Henning Hraban Ramm
+  - updated Czech by Pavel Fric
+
+
+Changes in 2.19.0 -- April 22nd, 2016
+
+* Requirement changes:
+  - Frescobaldi now requires python-ly 0.9.4
+* New features:
+  - Tools->Quick Remove->Remove Fingerings
+  - Tools->Quick Remove->Remove Comments
+  - Tools->Pitch->Simplify Accidentals
+  - It is now configurable whether the document tabs have a close button
+  - The new LilyPond feature to embed source code files in the PDF (LilyPond >=
+    2.19.39) can be used in publish mode and the custom engrave dialog (#813)
+  - Clicking a TOC item in the Music View jumps to its destination (#803)
+  - When copying music to an image, a new option has been added to render the
+    image twice as large and scale it smoothly down, which improves images at
+    smaller DPI values.
+  - An option to keep the text cursor in the current line, when using the
+    horizontal arrow keys (off by default) (wish #779)
+* Improvements:
+  - LilyPond 2.18+ \relative { ... } without start pitch is now supported
+  - It is possible to use no start pitch on abs->rel conversion and specify
+    the desired behaviour using two checkboxes in the tools->pitch menu.
+  - Clicking a point and click link in the Music View now remembers the previous
+    position
+  - Autocompile was not triggered in some circumstances.
+    Now it is also triggered:
+    * when a document is saved
+    * when undoing a change after a save (i.e. the undo would reset the
+      "modifified" flag of the document)
+  - When tapping a tempo in the Score Wizard, it is now configurable whether
+    a "common" metronome value is picked, or the exact tapped BPM (#792)
+  - Allow zooming to 800% in Music View (#800)
+  - When closing a document that has an engrave job running, the user is warned
+    and can choose whether to wait for the job to complete, to abort it, or to
+    cancel the closing.
+  - Tabbar and document list show in the document icon whether the last
+    engraving was successful (#636)
+  - Comment and Uncomment snippets are improved and now in the Snippet menu
+  - Score Wizard:
+    - add C-Melody Sax (#810)
+* Bug fixes:
+  - fix #669 make click and drag working again
+  - fix #786 'Replace all' only works when run twice
+  - fix #793 Command autocompletion doesn’t work in figuremode
+  - fix #806 MIDI file not updated in MIDI Player when using "master" variable
+  - fix #807 search does not realize that content is changed
+  - fix #808 \figuremode should be enclosed within \new FiguredBass
+* Translations:
+  - updated: Dutch, Italian
+
+
+Changes in 2.18.2 -- December 26th, 2015
 
 * Requirement changes:
   - Frescobaldi now requires python-ly 0.9.3
+* Improvements:
+  - More flexible colored HTML export and copy
+  - Tabs now show the push-pin icon when a document is always engraved
+  - Autocomplete correctly again after '\markup' without opening bracket
+  - Enable Ctrl-Enter in Custom Engrave dialog (issue #691)
+* Bug fixes:
+  - fix AttributeError: 'SourceViewer' object has no attribute '_reply' (issue
+    #789)
+  - fix TypeError: QPen(): argument 1 has unexpected type QBrush
+  - fix some bugs in Quick Insert panel
 * Translations:
   - updated: Dutch, French, Italian, Ukrainian
 
@@ -58,7 +175,7 @@ Changes in 2.18 -- March 7th, 2015
     single and double (primary and secondary) typographical quotes (issue #529)
   - The music view now can display a PDF document with two pages next to each
     other, starting with a right or left page, and in single pages (issue #575)
-  - A new pitch tool, Mode shift, which can be used to change all or selected 
+  - A new pitch tool, Mode shift, which can be used to change all or selected
     notes to a specified mode or scale.
   - Commands to convert rests to spaces or vice versa, and to convert pitched
     rests (like c'4\rest) to normal rests, contributed by Peter Bjuhr.
@@ -138,9 +255,9 @@ Changes in 2.17 -- December 26th, 2014
   - workaround a LilyPond buglet in point-and-click highlighting of quoted
     strings: although the textedit uri points to the closing quote, the string
     is correctly highlighted
-  - dont disable run button of Engrave Custom dialog for autocompile jobs
+  - don't disable run button of Engrave Custom dialog for autocompile jobs
   - let autocompile jobs finish before starting a new one (comments issue #120)
-  - dont always run autocompile job for the first opened document
+  - don't always run autocompile job for the first opened document
   - after a successful compile the default music viewer (pdf or svg) is
     activated. This can be suppressed in the LilyPond prefs (wish: issue #435)
   - the music view does not switch documents anymore when a compile is finished
@@ -171,8 +288,8 @@ Changes in 2.0.16 -- June 9th, 2014
   - updated: nl, fr, it
 * New features
   - preference to automatically strip trailing whitespace on save (issue #274)
-  - in Tools -> Rhythm: new command to remove duration scalings that contain 
-    a fraction value (the action was already available for some time, but it 
+  - in Tools -> Rhythm: new command to remove duration scalings that contain
+    a fraction value (the action was already available for some time, but it
     wasn't in the menu)
   - new option to copy only the styled HTML contents to the clipboard
     wrapped in a pre tag, not a full HTML document
@@ -258,8 +375,8 @@ Changes in 2.0.14 -- March 7th, 2014
   - New barline types in the Quick Insert panel, the barlines are written
     in the correct style, depending on the LilyPond version set in the document
     (issue #365).
-  - In the output-suffix (the scheme output-suffix variable or 
-    \bookOutputSuffix), non-alphanumeric characters (except '-' and '_') are 
+  - In the output-suffix (the scheme output-suffix variable or
+    \bookOutputSuffix), non-alphanumeric characters (except '-' and '_') are
     replaced with '_', just like LilyPond itself does it (issue #373).
 * Bug fixes:
   - Fixed issue 336: TypeError on MusicXml export
@@ -269,9 +386,9 @@ Changes in 2.0.14 -- March 7th, 2014
     e.g. when a cis is transposed from c to cisis. The note is then altered,
     just like LilyPond handles this.
 * Temporarily removed feature:
-  - MusicXML export has been temporarily removed from the File->Export menu. 
-    It is still visible in the git checkout. It is also available in the ly 
-    command (in the python-ly package, and also in Frescobaldi's git checkout) 
+  - MusicXML export has been temporarily removed from the File->Export menu.
+    It is still visible in the git checkout. It is also available in the ly
+    command (in the python-ly package, and also in Frescobaldi's git checkout)
     but it needs more testing and robustness before it is usable in Frescobaldi.
 
 
@@ -281,7 +398,7 @@ Changes in 2.0.13 -- December 31st, 2013
   - updated: nl, fr
 * New features:
   - A new option LilyPond->Auto-engrave, that runs the engraver in preview mode
-    everytime the document changes
+    every time the document changes
   - An option to hide log display for automatically started engraving jobs
   - Real-time Midi capturing, contributed by Manuel Mchalwat (this was actually
     in 2.0.12, I just forgot to write it in the ChangeLog!)
@@ -305,12 +422,12 @@ Changes in 2.0.12 -- December 26th, 2013
   - updated: cs, nl, fr, es
 * New features:
   - Edit->Select Block has finally been implemented
-  - A viewer for LilyPond-generated SVG files has been added by Peter Bjuhr. 
-    This viewer (accessible via Tools->SVG Viewer) currently has one-way point 
-    and click. This only works with recent development versions of LilyPond, 
+  - A viewer for LilyPond-generated SVG files has been added by Peter Bjuhr.
+    This viewer (accessible via Tools->SVG Viewer) currently has one-way point
+    and click. This only works with recent development versions of LilyPond,
     that add the point and click information to SVG files. In the future, the
     SVG view may become a fully fledged graphical music editor.
-  - The default output format can be set in the LilyPond preferences (the 
+  - The default output format can be set in the LilyPond preferences (the
     current options are PDF or SVG, the default is PDF)
 * Improvements:
   - The indenter's handling of tabs and spaces has been improved. A tab always
@@ -330,8 +447,8 @@ Changes in 2.0.12 -- December 26th, 2013
   - Better Mac OS X icons (contributed by Davide Liessi)
   - The internal handling of manipulations like transpose, translate, and the
     various rhythm commands has become less dependent on Frescobaldi code.
-    These functionality now resides in the ly module and could be used by 
-    other applications. The commands now can work on any ly.document, which 
+    These functionality now resides in the ly module and could be used by
+    other applications. The commands now can work on any ly.document, which
     need not be a Frescobaldi document.
   - The internal help system has seen a massive overhaul: help files are now
     very easy to write in a simplified markdown-like syntax. Adding help pages
@@ -367,7 +484,7 @@ Changes in 2.0.11 -- October 16th, 2013
     contents to a new snippet
 * Improvements:
   - highlighting and auto-completion of Scheme code has been improved
-    by Nicolas Malarmey. 
+    by Nicolas Malarmey.
   - when switching documents with multiple editor views open, and one of the
     views displays the document, that view is made current, instead of changing
     the document in the current view.
@@ -674,7 +791,7 @@ Changes in 1.9.3 -- December 1st, 2011
   - don't try to load non-existing file when clicking a point-and click link
   - cursor now remains in same column while moving vertically after indent
   - add articulations etc to autocompletion
-  - dont show the log if the user aborted a job
+  - don't show the log if the user aborted a job
 
 
 Changes in 1.9.2 -- November 11th, 2011
@@ -719,7 +836,7 @@ Changes in 1.9.0 -- September 27th, 2011
 * All translations imported
 
 
-Changes in 1.2.1 -- 
+Changes in 1.2.1 --
 
 * Fixes:
   - Correct spacing alist names in LilyPond 2.14 in blank paper tool
@@ -864,7 +981,7 @@ Changes in 1.1.2 -- July 8th, 2010
 * General:
   - print and email actions have moved to the File menu
   - close button on document tabs (can be turned off in Settings->Editor Comp.)
-  - warnings and notifications have a "dont ask again" checkbox, and can be
+  - warnings and notifications have a "don't ask again" checkbox, and can be
     turned back on in the settings
   - progress indicator saves the build time in document metainfo
 * Autocompletion:
@@ -922,7 +1039,7 @@ Changes in 1.1.0 -- March 26th, 2010
 * Repeat last expression: don't append space
 * Email files: select files with checkboxes instead of Ctrl+Click
 * Installation:
-  - byte compiling the Python modules can be supressed by adding
+  - byte compiling the Python modules can be suppressed by adding
     -DBYTECOMPILE=NO to the cmake command line
   - building the icons from SVN or out-of-source requires LilyPond 2.13.11+
 * Some workarounds for subtle SIP 4.10/KDE 4.4 garbage collection bugs
@@ -1062,7 +1179,7 @@ Changes in 0.7.15 -- October 13th, 2009
   - named colors are shown in the right color
   - some often used block commands like \header now also insert the braces,
     and place the cursor between them.
-  - names of variables (like composer in the header) automagically append ' = ' 
+  - names of variables (like composer in the header) automagically append ' = '
     if the remainder of the line does not start with the '=' character.
 * New commands in the Log context menu to copy or save its contents.
 * LilyPond symbol icons are displayed white if the users color palette settings
@@ -1228,7 +1345,7 @@ Changes in 0.7.5 -- February 12th, 2009
 * In Edit-menu:
   * New command to cut a piece of text and assign it to a variable
   * New shortcut to repeat the last entered music expression
-  * New shortcut to expand a short string to user-definable pieces of LilyPond 
+  * New shortcut to expand a short string to user-definable pieces of LilyPond
     input. When no shortcut is typed a dialog is opened where shortcuts can
     be chosen and edited.
   * New shortcuts (Alt+Up and Alt+Down) to jump between blank lines, c.q.
@@ -1271,7 +1388,7 @@ Changes in 0.7.2 -- January 7th, 2009
 * Bugfixes:
   * Fix shift-up and shift-down selection in editor while PDF is visible.
   * don't say LilyPond crashes if user terminates the process
-  * End startup notification if running instance found. 
+  * End startup notification if running instance found.
 
 
 Changes in 0.7.1 -- January 3rd, 2009
@@ -1287,4 +1404,3 @@ Changes in 0.7.1 -- January 3rd, 2009
 Changes in 0.7 -- December 26th, 2008
 
 * Initial release.
-

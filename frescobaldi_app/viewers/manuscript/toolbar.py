@@ -18,29 +18,13 @@
 # See http://www.gnu.org/licenses/ for more information.
 
 """
-Highlights matching characters in a textedit,
-using an ArbitraryHighlighter.
+Toolbar for the manuscript viewer
 """
 
-from . import matcher
+from viewers import toolbar
 
-class Matcher(matcher.Matcher):
-    
-    priority = 0
-    
-    def __init__(self, highlighter):
-        """Initialize the Matcher; highlighter is an ArbitraryHighlighter instance."""
-        super(matcher.Matcher, self).__init__(highlighter)
-        self.edit().cursorPositionChanged.connect(self.slotCursorPositionChanged)
-
-    def edit(self):
-        """Reimplemented to return the parent of our parent:)"""
-        return self.parent().parent()
-    
-    def highlight(self, cursors):
-        """Highlights the selections of the specified QTextCursor instances."""
-        self.parent().highlight(self.format, cursors, self.priority, self.time)
-    
-    def clear(self):
-        """Removes the highlighting."""
-        self.parent().clear(self.format)
+class ManuscriptViewerToolbar(toolbar.AbstractViewerToolbar):
+    """Manuscript viewer's toolbar."""
+    # For now this is a pure descendant from AbstractViewerToolbar
+    # because that has been designed for this use case.
+    pass

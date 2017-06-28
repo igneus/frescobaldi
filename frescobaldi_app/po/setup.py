@@ -27,7 +27,7 @@ system.
 
 import locale
 
-from PyQt4.QtCore import QLocale, QSettings, QTimer
+from PyQt5.QtCore import QLocale, QSettings, QTimer
 
 import app
 
@@ -41,9 +41,9 @@ _currentlanguage = None
 
 def preferred():
     """Return a list of language codes from the operating system preferences.
-    
+
     Language- and country codes will always be separated with an underscore '_'.
-    
+
     """
     try:
         langs = QLocale().uiLanguages()
@@ -54,7 +54,7 @@ def preferred():
         # in some systems, language/country codes have '-' and not '_'
         langs = [l.replace('-', '_') for l in langs]
     if not langs:
-        try: 
+        try:
             langs.append(locale.getdefaultlocale()[0])
         except ValueError:
             pass
@@ -62,10 +62,10 @@ def preferred():
 
 def default():
     """Return the first preferred system default UI language that is available in Frescobaldi.
-    
+
     May return None, if none of the system preferred languages is available
     in Frescobaldi.
-    
+
     """
     av_langs = available()
     av_langs.append("en")
@@ -75,12 +75,12 @@ def default():
 
 def current():
     """Returns the currently active UI language code.
-    
+
     A name is always returned, which can be "C", meaning no translation
     is desired.
-    
+
     """
-    return QSettings().value("language", "", type("")) or default() or "C"
+    return QSettings().value("language", "", str) or default() or "C"
 
 def _setup():
     """Set application language according to settings."""
@@ -99,12 +99,9 @@ def _setup():
 @app.oninit
 def _start_up():
     """Initialize GUI translations. Called op app startup."""
-    from . import qtranslator
-    # XXX TEMP qtranslator.initialize() segfaults on my system in Python3
-    import sys
-    if sys.version_info < (3, 0):
-        qtranslator.initialize()
     _setup()
+    from . import qtranslator
+    qtranslator.initialize()
 
 
 app.settingsChanged.connect(_setup)

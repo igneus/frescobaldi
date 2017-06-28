@@ -24,9 +24,8 @@ This is used throughout Frescobaldi, to obey color settings etc.
 
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import QSettings
+from PyQt5.QtCore import QSettings
 
 import app
 import textformats
@@ -51,15 +50,15 @@ class View(qpopplerview.View):
     def __init__(self, parent=None):
         super(View, self).__init__(parent)
         try:
-            import popplerqt4
+            import popplerqt5
         except ImportError:
-            # surface with a "could not load popplerqt4" message
+            # surface with a "could not load popplerqt5" message
             import popplerdummy
             self.setSurface(popplerdummy.Surface(self))
         self.surface().pageLayout().setDPI(self.physicalDpiX(), self.physicalDpiY())
         app.settingsChanged.connect(self.readSettings)
         self.readSettings()
-    
+
     def readSettings(self):
         kineticScrollingActive = QSettings().value("musicview/kinetic_scrolling", True, bool)
         scrollbarsVisible = QSettings().value("musicview/show_scrollbars", True, bool)
@@ -75,8 +74,8 @@ class View(qpopplerview.View):
 class MagnifierSettings(object):
     """Manages settings for the MusicView Magnifier."""
     sizeRange = (200, 800)
-    scaleRange = (150, 500)
-    
+    scaleRange = (150, 800)
+
     def __init__(self, size=300, scale=300):
         self.size = size
         self.scale = scale
@@ -95,7 +94,7 @@ class MagnifierSettings(object):
             self.scale = int(s.value("scale", self.scale))
         except ValueError:
             pass
-        
+
         self.size = bound(self.size, *cls.sizeRange)
         self.scale = bound(self.scale, *cls.scaleRange)
         return self

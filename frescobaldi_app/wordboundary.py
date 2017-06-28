@@ -22,18 +22,17 @@ Provides better word-boundary behaviour for View and other QPlainTextEdit
 instances.
 """
 
-from __future__ import unicode_literals
 
 import re
 
-from PyQt4.QtCore import QEvent, QObject, Qt
-from PyQt4.QtGui import QKeySequence, QTextCursor
+from PyQt5.QtCore import QEvent, QObject, Qt
+from PyQt5.QtGui import QKeySequence, QTextCursor
 
 import app
-import widgets.wordboundary
+import gadgets.wordboundary
 
 
-class BoundaryHandler(widgets.wordboundary.BoundaryHandler):
+class BoundaryHandler(gadgets.wordboundary.BoundaryHandler):
     word_regexp = re.compile(r'([-^_]?\\)?\w+(-\w+)*|\\\\|^|$', re.UNICODE)
 
 handler = BoundaryHandler()

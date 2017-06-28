@@ -22,9 +22,8 @@ The Git menu.
 Currently only list local branches, allowing one to switch to that branch.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtGui import QAction, QActionGroup, QMenu, QMessageBox
+from PyQt5.QtWidgets import QAction, QActionGroup, QMenu, QMessageBox
 
 import app
 import mainwindow
@@ -37,37 +36,37 @@ class GitMenu(QMenu):
         super(GitMenu, self).__init__(mainwindow)
         self.aboutToShow.connect(self.populate)
         app.translateUI(self)
-    
+
     def translateUI(self):
         self.setTitle(_('menu title', '&Git'))
-    
+
     def populate(self):
         self.clear()
         mainwindow = self.parentWidget()
         for a in GitBranchGroup.instance(mainwindow).actions():
             self.addAction(a)
-            
 
-class GitBranchGroup(QActionGroup, plugin.MainWindowPlugin):
+
+class GitBranchGroup(plugin.MainWindowPlugin, QActionGroup):
     """
     Maintains a list of actions to switch the branch
     Frescobali is run from.
-    
+
     The actions are added to the Git menu in order to be able
     to switch the branch Frescobaldi is run from.
     The actions also get accelerators that are kept
     during their lifetime.
-    
+
     """
     def __init__(self, mainwindow):
-        super(GitBranchGroup, self).__init__(mainwindow)
+        QActionGroup.__init__(self, mainwindow)
         self._acts = {}
         self._accels = {}
         self.setExclusive(True)
         for branch in vcs.app_repo.branches():
             self.addBranch(branch)
         self.triggered.connect(self.slotTriggered)
-    
+
     def actions(self):
         """
         Returns a list with actions for each branch.
@@ -107,7 +106,7 @@ class GitBranchGroup(QActionGroup, plugin.MainWindowPlugin):
             self._accels[branch] = ''
         name = name + " ({0})".format(vcs.app_repo.tracked_remote_label(branch))
         self._acts[branch].setText(name)
-    
+
     def slotTriggered(self, action):
         msgBox = QMessageBox()
         for branch, act in self._acts.items():

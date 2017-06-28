@@ -21,17 +21,17 @@
 The tab bar with the documents.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import Qt, QUrl, pyqtSignal
-from PyQt4.QtGui import QMenu, QTabBar, QColor
+from PyQt5.QtCore import QSettings, Qt, QUrl, pyqtSignal
+from PyQt5.QtWidgets import QMenu, QTabBar
+from PyQt5.QtGui import QColor
 
 import app
 import icons
 import document
 import documentcontextmenu
-import jobmanager
-import jobattributes
+import documenticon
+import engrave
 import util
 
 import inadiutorium.variations
@@ -39,40 +39,47 @@ import inadiutorium.variations
 
 class TabBar(QTabBar):
     """The tabbar above the editor window."""
-    
+
     currentDocumentChanged = pyqtSignal(document.Document)
-    
+
     def __init__(self, parent=None):
         super(TabBar, self).__init__(parent)
-        
+
         self.setFocusPolicy(Qt.NoFocus)
-        self.setTabsClosable(True) # TODO: make configurable
         self.setMovable(True)      # TODO: make configurable
         self.setExpanding(False)
         self.setUsesScrollButtons(True)
         self.setElideMode(Qt.ElideNone)
-        
+
         mainwin = self.window()
         self.docs = []
         for doc in app.documents:
             self.addDocument(doc)
             if doc is mainwin.currentDocument():
                 self.setCurrentDocument(doc)
-        
+
         app.documentCreated.connect(self.addDocument)
         app.documentClosed.connect(self.removeDocument)
         app.documentUrlChanged.connect(self.setDocumentStatus)
         app.documentModificationChanged.connect(self.setDocumentStatus)
         app.jobStarted.connect(self.setDocumentStatus)
         app.jobFinished.connect(self.setDocumentStatus)
+        app.settingsChanged.connect(self.readSettings)
+        engrave.engraver(mainwin).stickyChanged.connect(self.setDocumentStatus)
         mainwin.currentDocumentChanged.connect(self.setCurrentDocument)
         self.currentChanged.connect(self.slotCurrentChanged)
         self.tabMoved.connect(self.slotTabMoved)
         self.tabCloseRequested.connect(self.slotTabCloseRequested)
-        
+        self.readSettings()
+
+    def readSettings(self):
+        """Called on init, and when the user changes the settings."""
+        s = QSettings()
+        self.setTabsClosable(s.value("tabs_closable", True, bool))
+
     def documents(self):
         return list(self.docs)
-        
+
     def addDocument(self, doc):
         if doc not in self.docs:
             self.docs.append(doc)
@@ -92,7 +99,9 @@ class TabBar(QTabBar):
     def setDocumentStatus(self, doc):
         if doc in self.docs:
             index = self.docs.index(doc)
-            self.setTabText(index, doc.documentName().replace('&', '&&'))
+            text = doc.documentName().replace('&', '&&')
+            if self.tabText(index) != text:
+                self.setTabText(index, text)
             if doc.url().toLocalFile():
                 tooltip = util.homify(doc.url().toLocalFile())
             elif not doc.url().isEmpty():
@@ -100,20 +109,11 @@ class TabBar(QTabBar):
             else:
                 tooltip = None
             self.setTabToolTip(index, tooltip)
-            # icon
-            job = jobmanager.job(doc)
-            if job and job.is_running() and not jobattributes.get(job).hidden:
-                icon = 'lilypond-run'
-            elif doc.isModified():
-                icon = 'document-save'
-            else:
-                icon = 'text-plain'
-            self.setTabIcon(index, icons.get(icon))
 
             if tooltip and inadiutorium.variations.is_variations_file(tooltip):
                 color = QColor('indigo')
                 self.setTabTextColor(index, color)
-    
+
     def setCurrentDocument(self, doc):
         """ Raise the tab belonging to this document."""
         if doc in self.docs:
@@ -125,29 +125,29 @@ class TabBar(QTabBar):
     def slotCurrentChanged(self, index):
         """ Called when the user clicks a tab. """
         self.currentDocumentChanged.emit(self.docs[index])
-    
+
     def slotTabCloseRequested(self, index):
         """ Called when the user clicks the close button. """
         self.window().closeDocument(self.docs[index])
-    
+
     def slotTabMoved(self, index_from, index_to):
         """ Called when the user moved a tab. """
         doc = self.docs.pop(index_from)
         self.docs.insert(index_to, doc)
-        
+
     def nextDocument(self):
         """ Switches to the next document. """
         index = self.currentIndex() + 1
         if index == self.count():
             index = 0
         self.setCurrentIndex(index)
-        
+
     def previousDocument(self):
         index = self.currentIndex() - 1
         if index < 0:
             index = self.count() - 1
         self.setCurrentIndex(index)
-    
+
     def contextMenuEvent(self, ev):
         index = self.tabAt(ev.pos())
         if index >= 0:

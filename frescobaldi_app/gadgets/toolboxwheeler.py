@@ -22,7 +22,7 @@ Pages through a QToolBox using the mouse wheel, by default with the
 CTRL modifier.
 """
 
-from PyQt4.QtCore import QEvent, QObject, Qt
+from PyQt5.QtCore import QEvent, QObject, Qt
 
 
 class ToolBoxWheeler(QObject):
@@ -32,15 +32,15 @@ class ToolBoxWheeler(QObject):
         super(ToolBoxWheeler, self).__init__(toolbox)
         self._wheeldelta = 0
         toolbox.installEventFilter(self)
-    
+
     def eventFilter(self, toolbox, ev):
         if ev.type() == QEvent.Wheel and ev.modifiers() & Qt.CTRL:
             self.wheelEvent(toolbox, ev)
             return True
         return False
-        
+
     def wheelEvent(self, toolbox, ev):
-        self._wheeldelta -= ev.delta()
+        self._wheeldelta -= ev.angleDelta().y()
         steps, self._wheeldelta = divmod(self._wheeldelta, 120)
         i = toolbox.currentIndex() + steps
         if 0 <= i < toolbox.count():

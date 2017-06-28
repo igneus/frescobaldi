@@ -36,15 +36,15 @@ many textedit widgets as you like.
 
 """
 
-from __future__ import unicode_literals
 
 import itertools
 import operator
 import re
 import time
 
-from PyQt4.QtCore import QEvent, QObject, Qt
-from PyQt4.QtGui import QApplication, QKeySequence, QTextCursor
+from PyQt5.QtCore import QEvent, QObject, Qt
+from PyQt5.QtGui import QKeySequence, QTextCursor
+from PyQt5.QtWidgets import QApplication
 
 
 _move_operations = (
@@ -58,40 +58,40 @@ _move_operations = (
 
 
 class BoundaryHandler(QObject):
-    
+
     _double_click_time = 0.0
     word_regexp = re.compile(r'\\?\w+|^|$', re.UNICODE)
-    
+
     def boundaries(self, block):
         """Return a list of tuples specifying the position of words in the block.
-        
+
         Each tuple denotes the start and end position of a "word" in the
         specified block.
-        
+
         You can return other boundaries by changing the word_regexp or by
         inheriting from this class and overwriting this method.
-        
+
         """
         return [m.span() for m in self.word_regexp.finditer(block.text())]
-    
+
     def left_boundaries(self, block):
         left = operator.itemgetter(0)
         return [left(b) for b in self.boundaries(block)]
-        
+
     def right_boundaries(self, block):
         right = operator.itemgetter(1)
         return [right(b) for b in self.boundaries(block)]
-        
+
     def move(self, cursor, operation, mode=QTextCursor.MoveAnchor, n=1):
         """Reimplements Word-related cursor operations:
-        
+
         StartOfWord
         PreviousWord
         WordLeft
         EndOfWord
         NextWord
         WordRight
-        
+
         Other move operations are delegated to the QTextCursor itself.
         """
         block = cursor.block()
@@ -139,12 +139,12 @@ class BoundaryHandler(QObject):
                 boundaries = self.left_boundaries(block)
         else:
             return cursor.movePosition(operation, mode, n)
-        
+
     def select(self, cursor, selection):
         """Reimplements the WordUnderCursor selection type.
-        
+
         Other selection types are delegated to the QTextCursor itself.
-        
+
         """
         if selection == QTextCursor.WordUnderCursor:
             self.move(cursor, QTextCursor.StartOfWord)
@@ -156,17 +156,17 @@ class BoundaryHandler(QObject):
         """Install ourselves as event filter on the textedit and its viewport."""
         edit.installEventFilter(self)
         edit.viewport().installEventFilter(self)
-    
+
     def remove_textedit(self, edit):
         """Remove ourselves as event filter from the textedit and its viewport."""
         edit.removeEventFilter(self)
         edit.viewport().removeEventFilter(self)
-    
+
     def get_textedit(self, obj):
         """Return the textedit widget if obj is its viewport.
-        
+
         If obj is not the viewport of its parent, obj itself is returned.
-        
+
         """
         parent = obj.parent()
         try:
@@ -175,21 +175,16 @@ class BoundaryHandler(QObject):
         except AttributeError:
             pass
         return obj
-    
+
     def eventFilter(self, obj, ev):
         """Intercept key events from a Q(Plain)TextEdit and handle them."""
         if ev.type() == QEvent.KeyPress:
             return self.keyPressEvent(obj, ev)
         elif ev.type() == QEvent.MouseButtonDblClick:
             edit = self.get_textedit(obj)
-            self._double_click_time = time.time()
             return self.mouseDoubleClickEvent(edit, ev)
-        elif ev.type() == QEvent.MouseButtonPress:
-            edit = self.get_textedit(obj)
-            if time.time() - self._double_click_time < QApplication.doubleClickInterval() / 1000.0:
-                return self.mouseTripleClickEvent(edit, ev)
         return False
-    
+
     def keyPressEvent(self, obj, ev):
         """Handles the Word-related key events for the Q(Plain)TextEdit."""
         c = obj.textCursor()
@@ -218,21 +213,11 @@ class BoundaryHandler(QObject):
     def mouseDoubleClickEvent(self, obj, ev):
         """Handles the double-click even to select a word."""
         if ev.button() == Qt.LeftButton:
+            block = obj.blockSignals(True) # prevent selectionChanged etc emitted twice
+            obj.mouseDoubleClickEvent(ev)  # otherwise triple click and drag won't work
+            obj.blockSignals(block)
             c = obj.cursorForPosition(ev.pos())
             self.select(c, QTextCursor.WordUnderCursor)
-            obj.setTextCursor(c)
-            return True
-        return False
-
-    def mouseTripleClickEvent(self, obj, ev):
-        """Handles the triple-click even to select a line."""
-        if ev.button() == Qt.LeftButton:
-            c = obj.cursorForPosition(ev.pos())
-            c.movePosition(QTextCursor.StartOfBlock)
-            if c.block().next().isValid():
-                c.movePosition(QTextCursor.NextBlock, QTextCursor.KeepAnchor)
-            else:
-                c.movePosition(QTextCursor.EndOfBlock, QTextCursor.KeepAnchor)
             obj.setTextCursor(c)
             return True
         return False

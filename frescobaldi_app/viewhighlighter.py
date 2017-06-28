@@ -22,16 +22,15 @@ Manages highlighting of arbitrary things in a View, e.g.
 the current line, marked lines, search results etc.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import QEvent
-from PyQt4.QtGui import QColor, QTextCharFormat, QTextFormat
+from PyQt5.QtCore import QEvent
+from PyQt5.QtGui import QColor, QTextCharFormat, QTextFormat
 
 import app
 import plugin
 import bookmarks
 import textformats
-import widgets.arbitraryhighlighter
+import gadgets.arbitraryhighlighter
 
 
 def highlighter(view):
@@ -41,9 +40,10 @@ def highlighter(view):
 app.viewCreated.connect(highlighter)
 
 
-class ViewHighlighter(widgets.arbitraryhighlighter.ArbitraryHighlighter, plugin.Plugin):
+class ViewHighlighter(plugin.Plugin, gadgets.arbitraryhighlighter.ArbitraryHighlighter):
     def __init__(self, view):
-        super(ViewHighlighter, self).__init__(view)
+        # no need to call the plugin __init__ method
+        gadgets.arbitraryhighlighter.ArbitraryHighlighter.__init__(self, view)
         self._cursorFormat = QTextCharFormat()
         self._cursorFormat.setProperty(QTextFormat.FullWidthSelection, True)
         app.settingsChanged.connect(self.readSettings)

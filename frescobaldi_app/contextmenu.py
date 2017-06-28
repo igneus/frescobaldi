@@ -24,10 +24,9 @@ This module is imported when a contextmenu event occurs in the View (view.py).
 
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import QTimer, QUrl
-from PyQt4.QtGui import QAction
+from PyQt5.QtCore import QTimer, QUrl
+from PyQt5.QtWidgets import QAction
 
 import icons
 import util
@@ -43,19 +42,22 @@ def contextmenu(view):
 
     # create the actions in the actions list
     actions = []
-    
+
     actions.extend(open_files(cursor, menu, mainwindow))
-    
+
     actions.extend(jump_to_definition(cursor, menu, mainwindow))
 
     actions.extend(inadiutorium.contextmenu.actions(cursor, menu, mainwindow))
-    
-    
+
     if cursor.hasSelection():
         import panelmanager
-        actions.append(panelmanager.manager(mainwindow).snippettool.actionCollection.copy_to_snippet)
         actions.append(mainwindow.actionCollection.edit_copy_colored_html)
-    
+        actions.append(panelmanager.manager(mainwindow).snippettool.actionCollection.copy_to_snippet)
+        import documentactions
+        ac = documentactions.get(mainwindow).actionCollection
+        actions.append(ac.edit_cut_assign)
+        actions.append(ac.edit_move_to_include_file)
+
     # now add the actions to the standard menu
     if actions:
         first_action = menu.actions()[0] if menu.actions() else None

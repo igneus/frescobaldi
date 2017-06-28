@@ -21,25 +21,24 @@
 Performs upgrades in the settings structure.
 """
 
-from __future__ import unicode_literals
 
 try:
     string_types = basestring
 except NameError:
     string_types = str
 
-from PyQt4.QtCore import QSettings
+from PyQt5.QtCore import QSettings
 
 import appinfo
 
 def update(version):
     """Call subroutines listed below for version upgrades."""
-    
+
     if version < 1:
         moveSettingsToNewRoot()
-    
+
     # ... add other setting updates here...
-    
+
 
 
 def moveSettingsToNewRoot():
@@ -58,4 +57,4 @@ def moveSettingsToNewRoot():
             for k in keys:
                 s.setValue(k, o.value(k))
             o.clear()
-    
+

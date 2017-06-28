@@ -21,11 +21,10 @@
 The completer for Frescobaldi.
 """
 
-from __future__ import unicode_literals
 
 import re
 
-from PyQt4.QtGui import QTextCursor
+from PyQt5.QtGui import QTextCursor
 
 import app
 import textformats
@@ -39,11 +38,11 @@ class Completer(widgets.completer.Completer):
         self.popup().setMinimumWidth(100)
         app.settingsChanged.connect(self.readSettings)
         self.readSettings()
-    
+
     def readSettings(self):
         self.popup().setFont(textformats.formatData('editor').font)
         self.popup().setPalette(textformats.formatData('editor').palette())
-    
+
     def completionCursor(self):
         cursor = self.textCursor()
         # trick: if we are still visible we don't have to analyze the text again

@@ -21,10 +21,10 @@
 Help browser dockwidget.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QAction, QKeySequence
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QKeySequence
+from PyQt5.QtWidgets import QAction
 
 import actioncollection
 import actioncollectionmanager
@@ -45,11 +45,11 @@ class HelpBrowser(panel.Panel):
     def translateUI(self):
         self.setWindowTitle(_("Documentation Browser"))
         self.toggleViewAction().setText(_("&Documentation Browser"))
-        
+
     def createWidget(self):
         from . import browser
         return browser.Browser(self)
-        
+
     def activate(self):
         super(HelpBrowser, self).activate()
         self.widget().webview.setFocus()
@@ -57,10 +57,10 @@ class HelpBrowser(panel.Panel):
 
 class Actions(actioncollection.ActionCollection):
     name = "docbrowser"
-    
+
     def title(self):
         return _("Documentation Browser")
-    
+
     def createActions(self, parent=None):
         self.help_back = QAction(parent)
         self.help_forward = QAction(parent)
@@ -68,16 +68,16 @@ class Actions(actioncollection.ActionCollection):
         self.help_print = QAction(parent)
         self.help_lilypond_doc= QAction(parent)
         self.help_lilypond_context = QAction(parent)
-        
+
         self.help_back.setIcon(icons.get("go-previous"))
         self.help_forward.setIcon(icons.get("go-next"))
         self.help_home.setIcon(icons.get("go-home"))
         self.help_lilypond_doc.setIcon(icons.get("lilypond-run"))
         self.help_print.setIcon(icons.get("document-print"))
-        
+
         self.help_lilypond_doc.setShortcut(QKeySequence("F9"))
         self.help_lilypond_context.setShortcut(QKeySequence("Shift+F9"))
-        
+
     def translateUI(self):
         self.help_back.setText(_("Back"))
         self.help_forward.setText(_("Forward"))

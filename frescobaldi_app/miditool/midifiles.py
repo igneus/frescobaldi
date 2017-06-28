@@ -21,11 +21,10 @@
 Handles MIDI files.
 """
 
-from __future__ import unicode_literals
 
 import os
 
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 
 import icons
 import plugin
@@ -42,10 +41,10 @@ class MidiFiles(plugin.DocumentPlugin):
         self.current = 0
         document.loaded.connect(self.invalidate, -100)
         jobmanager.manager(document).finished.connect(self.invalidate, -100)
-    
+
     def invalidate(self):
         self._files = None
-        
+
     def update(self):
         files = resultfiles.results(self.document()).files('.mid*')
         self._files = files
@@ -53,12 +52,10 @@ class MidiFiles(plugin.DocumentPlugin):
         if files and self.current >= len(files):
             self.current = len(files) - 1
         return bool(files)
-    
+
     def __bool__(self):
         return bool(self._files)
-    
-    __nonzero__ = __bool__      # py2 compat
-    
+
     def song(self, index):
         if self._files is None:
             self.update()
@@ -66,7 +63,7 @@ class MidiFiles(plugin.DocumentPlugin):
         if not song:
             song = self._songs[index] = midifile.song.load(self._files[index])
         return song
-    
+
     def model(self):
         """Returns a model for a combobox."""
         if self._files is None:

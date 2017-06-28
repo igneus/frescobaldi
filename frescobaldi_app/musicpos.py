@@ -21,10 +21,9 @@
 Shows the time position of the text cursor in the music.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import QTimer
-from PyQt4.QtGui import QLabel
+from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QLabel
 
 import weakref
 
@@ -44,7 +43,7 @@ class MusicPosition(plugin.ViewSpacePlugin):
         view = space.activeView()
         if view:
             self.slotViewChanged(view)
-    
+
     def slotViewChanged(self, view):
         old = self._view()
         if old:
@@ -52,25 +51,25 @@ class MusicPosition(plugin.ViewSpacePlugin):
         self._view = weakref.ref(view)
         self.connectView(view)
         self.startTimer()
-    
+
     def connectView(self, view):
         view.cursorPositionChanged.connect(self.startTimer)
         view.document().contentsChanged.connect(self.startWaitTimer)
-        
+
     def disconnectView(self, view):
         view.cursorPositionChanged.disconnect(self.startTimer)
         view.document().contentsChanged.disconnect(self.startWaitTimer)
-    
+
     def startWaitTimer(self):
         """Called when the document changes, waits longer to prevent stutter."""
         self._waittimer.start(900)
         self._timer.stop()
-        
+
     def startTimer(self):
         """Called when the cursor moves."""
         if not self._waittimer.isActive():
             self._timer.start(100)
-    
+
     def slotTimeout(self):
         """Called when one of the timers fires."""
         view = self._view()
@@ -90,6 +89,7 @@ class MusicPosition(plugin.ViewSpacePlugin):
                 text = _("Pos: {pos}").format(
                     pos=ly.duration.format_fraction(pos)) if pos is not None else ''
             self._label.setText(text)
+            self._label.setVisible(bool(text))
 
 
 app.viewSpaceCreated.connect(MusicPosition.instance)

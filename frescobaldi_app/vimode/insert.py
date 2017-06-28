@@ -21,15 +21,14 @@
 Insert ViMode.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import Qt
+from PyQt5.QtCore import Qt
 
 from . import handlerbase
 
 
 class InsertMode(handlerbase.Handler):
-    
+
     def enter(self):
         m = self.vimode
         m.textEdit().setCursorWidth(m._originalCursorWidth)

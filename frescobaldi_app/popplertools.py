@@ -18,7 +18,7 @@
 # See http://www.gnu.org/licenses/ for more information.
 
 """
-Some useful tools dealing with popplerqt4 (PDF) documents.
+Some useful tools dealing with popplerqt5 (PDF) documents.
 """
 
 import os
@@ -30,29 +30,29 @@ class Document(object):
         self._filename = filename
         self._document = None
         self._dirty = True
-        
+
     def filename(self):
         """Returns the filename, set on init or via setFilename()."""
         return self._filename
-    
+
     def setFilename(self, filename):
         """Sets a filename.
-        
+
         The document will be reloaded next time it is requested.
-        
+
         """
         self._filename = filename
         self._dirty = True
-            
+
     def name(self):
         """Returns the filename without path."""
         return os.path.basename(self._filename)
-        
+
     def document(self):
         """Returns the PDF document the filename points to, reloading if the filename was set.
-        
+
         Can return None, in case the document failed to load.
-        
+
         """
         if self._dirty:
             self._document = self.load()
@@ -60,11 +60,11 @@ class Document(object):
         return self._document
 
     def load(self):
-        """Should load and return the popplerqt4 Document for our filename."""
+        """Should load and return the popplerqt5 Document for our filename."""
         try:
-            import popplerqt4
+            import popplerqt5
         except ImportError:
             return
-        return popplerqt4.Poppler.Document.load(self._filename)
+        return popplerqt5.Poppler.Document.load(self._filename)
 
 

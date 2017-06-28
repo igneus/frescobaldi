@@ -21,11 +21,10 @@
 Maintains an overview of the structure of a Document.
 """
 
-from __future__ import unicode_literals
 
 import re
 
-from PyQt4.QtCore import QSettings
+from PyQt5.QtCore import QSettings
 
 import app
 import plugin
@@ -68,7 +67,7 @@ def create_outline_re():
     """Create and return the expression to look for document outline items."""
     try:
         rx = QSettings().value("documentstructure/outline_patterns",
-                               default_outline_patterns, type(""))
+                               default_outline_patterns, str)
     except TypeError:
         rx = []
     # suffix duplicate named groups with a number
@@ -95,13 +94,13 @@ def create_outline_re():
 class DocumentStructure(plugin.DocumentPlugin):
     def __init__(self, document):
         self._outline = None
-    
+
     def invalidate(self):
         """Called when the document changes or the settings are changed."""
         self._outline = None
         app.settingsChanged.disconnect(self.invalidate)
         self.document().contentsChanged.disconnect(self.invalidate)
-    
+
     def outline(self):
         """Return the document outline as a series of match objects."""
         if self._outline is None:

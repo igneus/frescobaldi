@@ -22,10 +22,9 @@
 About dialog.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import QSettings, QSize, Qt, QUrl
-from PyQt4.QtGui import (
+from PyQt5.QtCore import QSettings, QSize, Qt, QUrl
+from PyQt5.QtWidgets import (
     QDialog, QDialogButtonBox, QLabel, QLayout, QTabWidget, QTextBrowser,
     QVBoxLayout, QWidget)
 
@@ -39,40 +38,40 @@ import userguide.page
 
 class AboutDialog(QDialog):
     """A simple 'About Frescobaldi' dialog.
-    
+
     Most of the information is taken from the info module.
-    
+
     """
     def __init__(self, mainwindow):
         """Creates the about dialog. You can simply exec_() it."""
         super(AboutDialog, self).__init__(mainwindow)
-        
+
         self.setWindowTitle(_("About {appname}").format(appname = appinfo.appname))
         layout = QVBoxLayout()
         self.setLayout(layout)
-        
+
         tabw = QTabWidget()
         layout.addWidget(tabw)
-        
+
         tabw.addTab(About(self), _("About"))
         tabw.addTab(Credits(self), _("Credits"))
         tabw.addTab(Version(self), _("Version"))
-        
+
         button = QDialogButtonBox(QDialogButtonBox.Ok)
         button.setCenterButtons(True)
         button.accepted.connect(self.accept)
         layout.addWidget(button)
         layout.setSizeConstraint(QLayout.SetFixedSize)
-        
+
 
 class About(QWidget):
     """About widget."""
     def __init__(self, parent=None):
         super(About, self).__init__(parent)
-        
+
         layout = QVBoxLayout()
         self.setLayout(layout)
-        
+
         size = QSize(100, 100)
         pic = QLabel()
         pic.setPixmap(icons.get("frescobaldi").pixmap(size))
@@ -83,7 +82,7 @@ class About(QWidget):
         text.setText(html())
         text.linkActivated.connect(self.openLink)
         layout.addWidget(text)
-    
+
     def openLink(self, url):
         helpers.openUrl(QUrl(url))
 
@@ -110,7 +109,7 @@ def html():
     version = _("Version {version}").format(version = appinfo.version)
     description = _("A LilyPond Music Editor")
     copyright = _("Copyright (c) {year} by {author}").format(
-        year = "2008-2015",
+        year = "2008-2017",
         author = """<a href="mailto:{0}" title="{1}">{2}</a>""".format(
             appinfo.maintainer_email,
             _("Send an e-mail message to the maintainers."),
@@ -124,7 +123,7 @@ def html():
     license = _("Licensed under the {gpl}.").format(
         gpl = """<a href="http://www.gnu.org/licenses/gpl.html">GNU GPL</a>""")
     homepage = appinfo.url
-    
+
     return html_template.format(**locals())
 
 

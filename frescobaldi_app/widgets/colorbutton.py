@@ -21,33 +21,33 @@
 A button to select a color.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import Qt, pyqtSignal
-from PyQt4.QtGui import (
-    QColor, QColorDialog, QPainter, QPushButton, QStyle, QStyleOptionButton,
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QColor, QPainter
+from PyQt5.QtWidgets import (
+    QColorDialog, QPushButton, QStyle, QStyleOptionButton,
     qDrawShadeRect)
 
 
 class ColorButton(QPushButton):
     """A PushButton displaying a color.
-    
+
     When clicked, opens a color dialog to change the color.
-    
+
     """
     colorChanged = pyqtSignal(QColor)
-    
+
     def __init__(self, parent=None):
         super(ColorButton, self).__init__(parent)
-        
+
         self.setFixedSize(self.sizeHint())
         self._color = QColor()
         self.clicked.connect(self.openDialog)
-    
+
     def color(self):
         """Returns the currently set color."""
         return self._color
-    
+
     def setColor(self, color):
         """Sets the current color. Maybe QColor() to indicate 'unset'."""
         if self._color != color:
@@ -58,7 +58,7 @@ class ColorButton(QPushButton):
     def clear(self):
         """Unsets the current color (setting it to QColor())."""
         self.setColor(QColor())
-        
+
     def openDialog(self):
         """Called when clicked, opens a dialog to change the color."""
         color = self._color if self._color.isValid() else QColor(Qt.white)

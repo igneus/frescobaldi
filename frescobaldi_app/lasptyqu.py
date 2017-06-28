@@ -37,7 +37,6 @@ The quotes itself are simply unicode strings.
 
 """
 
-from __future__ import unicode_literals
 
 import collections
 
@@ -104,11 +103,11 @@ def available():
 
 def quote_set(primary_left, primary_right, secondary_left, secondary_right):
     """Return a QuoteSet object for the specified four quote character strings.
-    
+
     This function is not needed normally, but should you ever want to create
     a custom QuoteSet object and access the attributes in the same way as with
     the predefined quote sets, this function can be used.
-    
+
     """
     return QuoteSet(
         primary=Quotes(primary_left, primary_right),
@@ -117,9 +116,9 @@ def quote_set(primary_left, primary_right, secondary_left, secondary_right):
 
 def quotes(language="C"):
     """Return a quotes set for the specified language (default C).
-    
+
     May return None, in case there are no quotes defined for the language.
-    
+
     """
     try:
         return _quotes[language]
@@ -136,31 +135,31 @@ def default():
 
 def preferred():
     """Return the quotes desired by the Frescobaldi user.
-    
+
     Always returns a quote set.
     Only this function depends on Qt and Frescobaldi.
-    
+
     """
-    
-    from PyQt4.QtCore import QSettings
+
+    from PyQt5.QtCore import QSettings
     import po.setup
 
     s = QSettings()
     s.beginGroup("typographical_quotes")
-    language = s.value("language", "current", type(""))
-    
+    language = s.value("language", "current", str)
+
     default = _quotes["C"]
     if language == "current":
         language = po.setup.current()
     elif language == "custom":
         return QuoteSet(
             primary = Quotes(
-                left = s.value("primary_left", default.primary.left, type("")),
-                right = s.value("primary_right", default.primary.right, type("")),
+                left = s.value("primary_left", default.primary.left, str),
+                right = s.value("primary_right", default.primary.right, str),
             ),
             secondary = Quotes(
-                left = s.value("secondary_left", default.secondary.left, type("")),
-                right = s.value("secondary_right", default.secondary.right, type("")),
+                left = s.value("secondary_left", default.secondary.left, str),
+                right = s.value("secondary_right", default.secondary.right, str),
             )
         )
     return quotes(language) or default

@@ -21,10 +21,9 @@
 The PDF preview panel context menu.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import QUrl
-from PyQt4.QtGui import QApplication, QMenu
+from PyQt5.QtCore import QUrl
+from PyQt5.QtWidgets import QApplication, QMenu
 
 
 import icons
@@ -32,24 +31,26 @@ import icons
 
 def show(position, panel, link, cursor):
     """Shows a context menu.
-    
+
     position: The global position to pop up
     panel: The music view panel, giving access to mainwindow and view widget
-    link: a popplerqt4 LinkBrowse instance or None
+    link: a popplerqt5 LinkBrowse instance or None
     cursor: a QTextCursor instance or None
-    
+
     """
     m = QMenu(panel)
-    
+
     # selection? -> Copy
     if panel.widget().view.surface().hasSelection():
+        if panel.widget().view.surface().selectedText():
+            m.addAction(panel.actionCollection.music_copy_text)
         m.addAction(panel.actionCollection.music_copy_image)
-    
+
     if cursor:
         a = m.addAction(icons.get("document-edit"), _("Edit in Place"))
         @a.triggered.connect
         def edit():
-            from . import editinplace
+            import editinplace
             editinplace.edit(panel.widget(), cursor, position)
     elif link:
         a = m.addAction(icons.get("window-new"), _("Open Link in &New Window"))
@@ -57,7 +58,7 @@ def show(position, panel, link, cursor):
         def open_in_browser():
             import helpers
             helpers.openUrl(QUrl(link.url()))
-        
+
         a = m.addAction(icons.get("edit-copy"), _("Copy &Link"))
         @a.triggered.connect
         def copy_link():
@@ -70,7 +71,7 @@ def show(position, panel, link, cursor):
         m.addAction(panel.actionCollection.music_zoom_original)
         m.addSeparator()
         m.addAction(panel.actionCollection.music_sync_cursor)
-    
+
     # help
     m.addSeparator()
     a = m.addAction(icons.get("help-contents"), _("Help"))
@@ -78,7 +79,7 @@ def show(position, panel, link, cursor):
     def help():
         import userguide
         userguide.show("musicview")
-    
+
     # show it!
     if m.actions():
         m.exec_(position)

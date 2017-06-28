@@ -21,14 +21,13 @@
 The Frescobaldi User Manual.
 """
 
-from __future__ import unicode_literals
 
 
 def show(name=None):
     """Display the help browser and the specified help page.
-    
+
     If no name is given, just display the browser.
-    
+
     """
     global _browser
     try:
@@ -40,12 +39,13 @@ def show(name=None):
 
 def addButton(box, name):
     """Adds a Help button to the specified QDialogButtonBox.
-    
+
     When clicked or F1 (the system standard help key) is pressed,
     the specified help page is opened.
-    
+
     """
-    from PyQt4.QtGui import QDialogButtonBox, QKeySequence
+    from PyQt5.QtGui import QKeySequence
+    from PyQt5.QtWidgets import QDialogButtonBox
     box.addButton(QDialogButtonBox.Help).setShortcut(QKeySequence.HelpContents)
     box.helpRequested.connect(lambda: show(name))
 

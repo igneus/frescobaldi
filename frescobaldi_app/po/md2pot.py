@@ -24,13 +24,12 @@ Writes a POT file.
 
 """
 
-from __future__ import unicode_literals
 
 import sys
 import textwrap
 
 import simplemarkdown
-import userguide.read 
+import userguide.read
 
 
 class Parser(userguide.read.Parser):
@@ -43,7 +42,7 @@ class Parser(userguide.read.Parser):
         w.subsequent_indent = ''
         self._output_lines = []
         self.f = output_file
-    
+
     def make_translation_strings(self, filename):
         self._curfilename = filename
         self.parse(userguide.read.document(filename)[0], lineno=1)

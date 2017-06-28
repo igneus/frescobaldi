@@ -24,10 +24,10 @@ the window icon is Command-clicked or dragged.
 Currently this makes only sense on Mac OS X.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import QEvent, QMimeData, QObject, QPoint, Qt
-from PyQt4.QtGui import QApplication, QDrag, QStyle
+from PyQt5.QtCore import QEvent, QMimeData, QObject, QPoint, Qt
+from PyQt5.QtWidgets import QApplication, QStyle
+from PyQt5.QtGui import QDrag
 
 import app
 

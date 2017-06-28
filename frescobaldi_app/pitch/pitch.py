@@ -24,12 +24,11 @@ All use the tools in ly.pitch.
 
 """
 
-from __future__ import unicode_literals
 
 import re
 
-from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QMessageBox
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QMessageBox
 
 import app
 import icons
@@ -78,28 +77,28 @@ def changeLanguage(cursor, language):
             _("(for LilyPond 2.14 and higher.)")))
 
 
-def rel2abs(cursor):
+def rel2abs(cursor, first_pitch_absolute):
     """Converts pitches from relative to absolute."""
     with qutil.busyCursor():
         c = lydocument.cursor(cursor, select_all=True)
-        ly.pitch.rel2abs.rel2abs(c)
+        ly.pitch.rel2abs.rel2abs(c, first_pitch_absolute=first_pitch_absolute)
 
 
-def abs2rel(cursor):
+def abs2rel(cursor, startpitch, first_pitch_absolute):
     """Converts pitches from absolute to relative."""
     with qutil.busyCursor():
         c = lydocument.cursor(cursor, select_all=True)
-        ly.pitch.abs2rel.abs2rel(c)
+        ly.pitch.abs2rel.abs2rel(c, startpitch=startpitch, first_pitch_absolute=first_pitch_absolute)
 
 
 def getTransposer(document, mainwindow):
     """Show a dialog and return the desired transposer.
-    
+
     Returns None if the dialog was cancelled.
-    
+
     """
     language = documentinfo.docinfo(document).language() or 'nederlands'
-    
+
     def readpitches(text):
         """Reads pitches from text."""
         result = []
@@ -108,29 +107,29 @@ def getTransposer(document, mainwindow):
             if r:
                 result.append(ly.pitch.Pitch(*r, octave=ly.pitch.octaveToNum(octave)))
         return result
-    
+
     def validate(text):
         """Returns whether the text contains exactly two pitches."""
         return len(readpitches(text)) == 2
-    
+
     text = inputdialog.getText(mainwindow, _("Transpose"), _(
         "Please enter two absolute pitches, separated by a space, "
         "using the pitch name language \"{language}\"."
         ).format(language=language), icon = icons.get('tools-transpose'),
         help = "transpose", validate = validate)
-    
+
     if text:
         return ly.pitch.transpose.Transposer(*readpitches(text))
 
 
 def getModalTransposer(document, mainwindow):
     """Show a dialog and return the desired modal transposer.
-    
+
     Returns None if the dialog was cancelled.
-    
+
     """
     language = documentinfo.docinfo(document).language() or 'nederlands'
-    
+
     def readpitches(text):
         """Reads pitches from text."""
         result = []
@@ -139,7 +138,7 @@ def getModalTransposer(document, mainwindow):
             if r:
                 result.append(ly.pitch.Pitch(*r, octave=ly.pitch.octaveToNum(octave)))
         return result
-    
+
     def validate(text):
         """Returns whether the text is an integer followed by the name of a key."""
         words = text.split()
@@ -151,7 +150,7 @@ def getModalTransposer(document, mainwindow):
             return True
         except ValueError:
             return False
-    
+
     text = inputdialog.getText(mainwindow, _("Transpose"), _(
         "Please enter the number of steps to alter by, followed by a key signature. (i.e. \"5 F\")"
         ), icon = icons.get('tools-transpose'),
@@ -159,16 +158,16 @@ def getModalTransposer(document, mainwindow):
     if text:
         words = text.split()
         return ly.pitch.transpose.ModalTransposer(int(words[0]), ly.pitch.transpose.ModalTransposer.getKeyIndex(words[1]))
-        
+
 
 def getModeShifter(document, mainwindow):
     """Show a dialog and return the desired mode shifter.
-    
+
     Returns None if the dialog was cancelled.
-    
+
     """
     language = documentinfo.docinfo(document).language() or 'nederlands'
-    
+
     def readpitches(text):
         """Reads pitches from text."""
         result = []
@@ -177,11 +176,11 @@ def getModeShifter(document, mainwindow):
             if r:
                 result.append(ly.pitch.Pitch(*r, octave=ly.pitch.octaveToNum(octave)))
         return result
-        
+
     def validate(text):
         """Validates text by checking if it contains a defined mode."""
         return len(readpitches(text)) == 1
-    
+
     from . import dialog
     dlg = dialog.ModeShiftDialog(mainwindow)
     dlg.addAction(mainwindow.actionCollection.help_whatsthis)
@@ -193,13 +192,14 @@ def getModeShifter(document, mainwindow):
         dlg.saveSettings()
         return ly.pitch.transpose.ModeShifter(key, scale)
 
-    
-def transpose(cursor, transposer, mainwindow=None):
+
+def transpose(cursor, transposer, mainwindow=None, relative_first_pitch_absolute=False):
     """Transpose pitches using the specified transposer."""
     c = lydocument.cursor(cursor, select_all=True)
     try:
         with qutil.busyCursor():
-            ly.pitch.transpose.transpose(c, transposer)
+            ly.pitch.transpose.transpose(c, transposer,
+                relative_first_pitch_absolute=relative_first_pitch_absolute)
     except ly.pitch.PitchNameNotAvailable as e:
         QMessageBox.critical(mainwindow, app.caption(_("Transpose")), _(
             "Can't perform the requested transposition.\n\n"

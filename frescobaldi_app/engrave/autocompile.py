@@ -31,9 +31,10 @@ The log is not displayed.
 
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import QSettings, Qt, QTimer
+import contextlib
+
+from PyQt5.QtCore import QSettings, Qt, QTimer
 
 import app
 import documentinfo
@@ -52,7 +53,7 @@ class AutoCompiler(plugin.MainWindowPlugin):
         self._enabled = False
         self._timer = QTimer(singleShot=True)
         self._timer.timeout.connect(self.slotTimeout)
-    
+
     def setEnabled(self, enabled):
         """Switch the autocompiler on or off."""
         enabled = bool(enabled)
@@ -71,22 +72,24 @@ class AutoCompiler(plugin.MainWindowPlugin):
             app.documentUrlChanged.disconnect(self.startTimer)
             if doc:
                 self.slotDocumentChanged(None, doc)
-    
+
     def slotDocumentChanged(self, new=None, old=None):
         """Called when the mainwindow changes the current document."""
         if old:
             old.contentsChanged.disconnect(self.startTimer)
             old.loaded.disconnect(self.startTimer)
+            old.saved.disconnect(self.startTimer)
         if new:
             new.contentsChanged.connect(self.startTimer)
             new.loaded.connect(self.startTimer)
+            new.saved.connect(self.startTimer)
             if self._enabled:
                 self.startTimer()
-    
+
     def startTimer(self):
         """Called to trigger a soon auto-compile try."""
         self._timer.start(750)
-    
+
     def slotTimeout(self):
         """Called when the autocompile timer expires."""
         eng = engraver(self.mainwindow())
@@ -96,7 +99,7 @@ class AutoCompiler(plugin.MainWindowPlugin):
             # a real job is running, come back when that is done
             rjob.done.connect(self.startTimer)
             return
-        
+
         mgr = AutoCompileManager.instance(doc)
         may_compile = mgr.may_compile()
         if not may_compile:
@@ -115,11 +118,11 @@ class AutoCompiler(plugin.MainWindowPlugin):
 class AutoCompileManager(plugin.DocumentPlugin):
     def __init__(self, document):
         document.contentsChanged.connect(self.slotDocumentContentsChanged, Qt.QueuedConnection)
-        document.saved.connect(self.slotDocumentSaved)
+        document.saving.connect(self.slotDocumentSaving)
         document.loaded.connect(self.initialize)
         jobmanager.manager(document).started.connect(self.slotJobStarted)
         self.initialize()
-    
+
     def initialize(self):
         document = self.document()
         if document.isModified():
@@ -130,13 +133,13 @@ class AutoCompileManager(plugin.DocumentPlugin):
             # look for existing result files in the default output format
             s = QSettings()
             s.beginGroup("lilypond_settings")
-            if s.value("default_output_target", "pdf", type("")) == "svg":
+            if s.value("default_output_target", "pdf", str) == "svg":
                 ext = '.svg*'
             else:
                 ext = '.pdf'
             self._dirty = not resultfiles.results(document).files(ext)
         self._hash = None if self._dirty else documentinfo.docinfo(document).token_hash()
-    
+
     def may_compile(self):
         """Return True if we could need to compile the document."""
         if self._dirty:
@@ -152,17 +155,28 @@ class AutoCompileManager(plugin.DocumentPlugin):
                     if h != hash(tuple()):
                         return True
             self._dirty = False
-    
+
     def slotDocumentContentsChanged(self):
         """Called when the user modifies the document."""
-        if self.document().isModified():    # not when a template was applied
+        doc = self.document()
+        if doc.isModified() or doc.isRedoAvailable():  # not when a template was applied
             self._dirty = True
 
-    def slotDocumentSaved(self):
-        """Called when the document is saved. Forces auto-compile once."""
-        self._dirty = True
-        self._hash = None
-    
+    @contextlib.contextmanager
+    def slotDocumentSaving(self):
+        """Called while the document is being saved.
+
+        Forces auto-compile once if the document was modified before saving.
+
+        """
+        modified = self.document().isModified()
+        try:
+            yield
+        finally:
+            if modified:
+                self._dirty = True
+                self._hash = None
+
     def slotJobStarted(self):
         """Called when an engraving job is started on this document."""
         if self._dirty:

@@ -14,7 +14,6 @@ info@wilbertberendsen.nl
 License: LGPL. More info: http://python-hyphenator.googlecode.com/
 
 """
-from __future__ import unicode_literals
 from __future__ import print_function
 
 try:
@@ -44,17 +43,17 @@ _hex_repl = lambda matchObj: chr(int(matchObj.group(1), 16))
 def replace_hex(text):
     """Replaces ^^xx (where xx is a two-digit hexadecimal value) occurrences
     by the corresponding unicode character.
-    
+
     """
     return _hex_re.sub(_hex_repl, text)
 
 
 class ParsedAlternative(object):
     """Parse nonstandard hyphen pattern alternative.
-    
+
     when called with an odd value, the instance returns an integer with data
     attribute (DataInt) about the current position in the pattern.
-    
+
     """
     def __init__(self, pat, alt):
         alt = alt.split(',')
@@ -79,10 +78,10 @@ class ParsedAlternative(object):
 
 class DataInt(int):
     """An integer with a data attribute.
-    
+
     Just an int some other data can be stuck to in a data attribute.
     Instantiate with ref=other to use the data from the other DataInt.
-    
+
     """
     def __new__(cls, value, data=None, ref=None):
         obj = int.__new__(cls, value)
@@ -95,10 +94,10 @@ class DataInt(int):
 
 class HyphenationDictionary(object):
     """Reads a hyph_*.dic file and stores the hyphenation patterns.
-    
+
     Parameters:
     filename : filename of hyph_*.dic pattern file to read
-    
+
     """
     def __init__(self, filename):
         self.patterns = {}
@@ -113,7 +112,7 @@ class HyphenationDictionary(object):
                         pass
             else:
                 decoder = codecs.getreader('latin1')
-            
+
             for pat in decoder(f):
                 pat = pat.strip()
                 if not pat or pat[0] == '%':
@@ -142,7 +141,7 @@ class HyphenationDictionary(object):
 
     def positions(self, word):
         """Returns a list of positions where the word can be hyphenated.
-        
+
         E.g. for the dutch word 'lettergrepen' this method returns
         the list [3, 6, 9].
 
@@ -157,7 +156,7 @@ class HyphenationDictionary(object):
             point
         cut: how many characters to remove while substituting the nonstandard
             hyphenation
-        
+
         """
         word = word.lower()
         try:
@@ -181,7 +180,7 @@ class HyphenationDictionary(object):
 
 class Hyphenator(object):
     """Reads a hyph_*.dic file and stores the hyphenation patterns.
-    
+
     Provides methods to hyphenate strings in various ways.
     Parameters:
     -filename : filename of hyph_*.dic to read
@@ -192,7 +191,7 @@ class Hyphenator(object):
     left and right may also later be changed:
       h = Hyphenator(file)
       h.left = 1
-    
+
     """
     def __init__(self, filename, left=2, right=2, cache=True):
         self.left  = left
@@ -203,10 +202,10 @@ class Hyphenator(object):
 
     def positions(self, word):
         """Returns a list of positions where the word can be hyphenated.
-        
+
         See also HyphenationDictionary.positions. The points that are too far to
         the left or right are removed.
-        
+
         """
         right = len(word) - self.right
         return [i for i in self.hd.positions(word) if self.left <= i <= right]
@@ -227,11 +226,11 @@ class Hyphenator(object):
     def wrap(self, word, width, hyphen='-'):
         """Returns the longest possible first part and the last part of the
         hyphenated word.
-        
+
         The first part has the hyphen already attached. Returns None, if there
         is no hyphenation point before width, or if the word could not be
         hyphenated.
-        
+
         """
         width -= len(hyphen)
         for w1, w2 in self.iterate(word):
@@ -240,11 +239,11 @@ class Hyphenator(object):
 
     def inserted(self, word, hyphen='-'):
         """Returns the word as a string with all the possible hyphens inserted.
-        
+
         E.g. for the dutch word 'lettergrepen' this method returns the string
         'let-ter-gre-pen'. The hyphen string to use can be given as the second
         parameter, that defaults to '-'.
-        
+
         """
         l = list(word)
         for p in reversed(self.positions(word)):
@@ -265,7 +264,7 @@ if __name__ == "__main__":
     import sys
     dict_file = sys.argv[1]
     word = sys.argv[2]
-    if not isinstance(word, type("")):
+    if not isinstance(word, str):
         import locale
         word = word.decode(locale.getpreferredencoding())
 

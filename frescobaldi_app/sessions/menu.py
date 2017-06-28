@@ -21,9 +21,8 @@
 Session menu.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtGui import QActionGroup, QMenu
+from PyQt5.QtWidgets import QActionGroup, QMenu
 
 import app
 import qutil
@@ -50,10 +49,10 @@ class SessionMenu(QMenu):
         self.addAction(ac.session_none)
         self.addSeparator()
         self.aboutToShow.connect(self.populate)
-    
+
     def translateUI(self):
         self.setTitle(_('menu title', '&Session'))
-    
+
     def populate(self):
         ac = manager.get(self.parentWidget()).actionCollection
         ag = self._actionGroup

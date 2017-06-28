@@ -21,36 +21,36 @@
 Manages the Panels (Tools).
 """
 
-from __future__ import unicode_literals
 
 import sys
 
-from PyQt4.QtCore import QSettings
+from PyQt5.QtCore import QSettings
 
 import actioncollection
 import actioncollectionmanager
 import plugin
-import vcs
+import app
 
 
 def manager(mainwindow):
     return PanelManager.instance(mainwindow)
-    
+
 
 class PanelManager(plugin.MainWindowPlugin):
     def __init__(self, mainwindow):
         """Instantiate the Panel Manager.
-        
+
         In this method you should also load the modules that implement
         panel tools.
-        
+
         """
         self._panels = []
-        
+
         # add the the panel stubs here
         self.loadPanel("quickinsert.QuickInsertPanel")
         self.loadPanel("musicview.MusicViewPanel")
         self.loadPanel("svgview.SvgViewPanel")
+        self.loadPanel("viewers.manuscript.ManuscriptViewPanel")
         self.loadPanel("logtool.LogTool")
         self.loadPanel("docbrowser.HelpBrowser")
         self.loadPanel("snippet.tool.SnippetTool")
@@ -60,33 +60,32 @@ class PanelManager(plugin.MainWindowPlugin):
         self.loadPanel("doclist.DocumentList")
         self.loadPanel("outline.OutlinePanel")
         self.loadPanel("layoutcontrol.LayoutControlOptions")
-        
+
         # The Object editor is highly experimental and should be
         # commented out for stable releases.
-        if vcs.app_is_git_controlled() or QSettings().value("experimental-features", False, bool):
+        if app.is_git_controlled() or QSettings().value("experimental-features", False, bool):
             self.loadPanel("objecteditor.ObjectEditor")
-        
         self.createActions()
-        
+
         # make some default arrangements
         mainwindow.tabifyDockWidget(self.musicview, self.docbrowser)
         mainwindow.tabifyDockWidget(self.musicview, self.svgview)
-    
+
     def loadPanel(self, name):
         """Loads the named Panel.
-        
+
         The name consists of a module name and the class name of the Panel
         subclass to instantiate.
-        
+
         The instance is saved in an attribute 'name', with dots and the class
         name removed. So if you call self.loadTool("foo.bar.FooBar"), you can
         find the instantiated FooBar panel in the 'foobar' attribute.
-        
+
         """
         module_name, class_name = name.rsplit('.', 1)
         __import__(module_name)
         module = sys.modules[module_name]
-        attribute_name = module_name.replace('.', '')
+        attribute_name = module_name.split('.')[-1] if "viewers" in name else module_name.replace('.', '')
         cls = vars(module)[class_name]
         panel = cls(self.mainwindow())
         self._panels.append((attribute_name, panel))
@@ -103,10 +102,10 @@ class PanelManager(plugin.MainWindowPlugin):
 
     def panels_at(self, area):
         """Return the list of panels at the specified Qt.DockWidgetArea.
-        
+
         Each entry is the (name, panel) tuple. Floating or hidden panels are
         not returned, but tabbed panels are.
-        
+
         """
         result = []
         for name, panel in self._panels:
@@ -120,7 +119,7 @@ class PanelManager(plugin.MainWindowPlugin):
 class Actions(actioncollection.ActionCollection):
     """Manages the keyboard shortcuts to hide/show the plugins."""
     name = "panels"
-    
+
     def createActions(self, manager):
         # add the actions for the plugins
         for name, panel in manager._panels:

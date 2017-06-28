@@ -21,10 +21,9 @@
 QProgressBar subclasses.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import QTimeLine, QTimer
-from PyQt4.QtGui import QProgressBar
+from PyQt5.QtCore import QTimeLine, QTimer
+from PyQt5.QtWidgets import QProgressBar
 
 class TimedProgressBar(QProgressBar):
     """A QProgressBar showing a certain time elapse."""
@@ -34,13 +33,13 @@ class TimedProgressBar(QProgressBar):
         self._timeline = QTimeLine(updateInterval=100, frameChanged=self.setValue)
         self._timeline.setFrameRange(0, 100)
         self._hideTimer = QTimer(timeout=self._done, singleShot=True, interval=3000)
-    
+
     def start(self, total, elapsed=0.0):
         """Starts showing progress.
-        
+
         total is the number of seconds (maybe float) the timeline will last,
         elapsed (defaulting to 0) is the value to start with.
-        
+
         """
         self._hideTimer.stop()
         self._timeline.stop()
@@ -50,14 +49,14 @@ class TimedProgressBar(QProgressBar):
         self._timeline.resume()
         if self.hideOnTimeout:
             self.show()
-        
+
     def stop(self, showFinished=True):
         """Ends the progress display.
-        
+
         If showFinished is True (the default), 100% is shown for a few
         seconds and then the progress is reset.
         The progressbar is hidden if the hideOnTimeout attribute is True.
-        
+
         """
         self._hideTimer.stop()
         self._timeline.stop()
@@ -68,7 +67,7 @@ class TimedProgressBar(QProgressBar):
             self._done()
 
     def _done(self):
-        self.reset()
         if self.hideOnTimeout:
             self.hide()
+        self.reset()
 

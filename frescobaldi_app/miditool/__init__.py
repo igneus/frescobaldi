@@ -21,10 +21,10 @@
 The MIDI tool.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QAction, QKeySequence
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QKeySequence
+from PyQt5.QtWidgets import QAction
 
 import actioncollection
 import actioncollectionmanager
@@ -46,27 +46,27 @@ class MidiTool(panel.Panel):
         ac.midi_restart.triggered.connect(self.slotRestart)
         actioncollectionmanager.manager(mainwindow).addActionCollection(ac)
         mainwindow.addDockWidget(Qt.TopDockWidgetArea, self)
-    
+
     def translateUI(self):
         self.setWindowTitle(_("MIDI"))
         self.toggleViewAction().setText(_("MIDI &Player"))
-    
+
     def createWidget(self):
         from . import widget
         return widget.Widget(self)
-        
+
     def slotPause(self):
         """Called on action Pause."""
         self.widget().stop()
-        
+
     def slotPlay(self):
         """Called on action Play."""
         self.widget().play()
-    
+
     def slotStop(self):
         """Called on action Stop."""
         self.widget().stop()
-    
+
     def slotRestart(self):
         """Called on action Restart."""
         self.widget().restart()
@@ -79,20 +79,20 @@ class Actions(actioncollection.ActionCollection):
         self.midi_play = QAction(parent)
         self.midi_stop = QAction(parent)
         self.midi_restart = QAction(parent)
-        
+
         try:
             self.midi_pause.setShortcut(QKeySequence(Qt.Key_MediaPause))
         except AttributeError:
-            pass # No Qt.Key_MediaPause in some PyQt4 versions
+            pass # No Qt.Key_MediaPause in some PyQt5 versions
         self.midi_play.setShortcut(QKeySequence(Qt.Key_MediaPlay))
         self.midi_stop.setShortcut(QKeySequence(Qt.Key_MediaStop))
         self.midi_restart.setShortcut(QKeySequence(Qt.Key_MediaPrevious))
-        
+
         self.midi_pause.setIcon(icons.get('media-playback-pause'))
         self.midi_play.setIcon(icons.get('media-playback-start'))
         self.midi_stop.setIcon(icons.get('media-playback-stop'))
         self.midi_restart.setIcon(icons.get('media-skip-backward'))
-        
+
     def translateUI(self):
         self.midi_pause.setText(_("midi player", "Pause"))
         self.midi_play.setText(_("midi player", "Play"))

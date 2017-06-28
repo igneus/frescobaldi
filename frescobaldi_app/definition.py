@@ -21,10 +21,9 @@
 Find the definition of variables.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import QUrl
-from PyQt4.QtGui import QTextCursor
+from PyQt5.QtCore import QUrl
+from PyQt5.QtGui import QTextCursor
 
 import app
 import documentinfo
@@ -55,9 +54,9 @@ def target(node):
 
 def goto_definition(mainwindow, cursor=None):
     """Go to the definition of the item the mainwindow's cursor is at.
-    
+
     Return True if there was a definition.
-    
+
     """
     if cursor is None:
         cursor = mainwindow.textCursor()

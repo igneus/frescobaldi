@@ -21,13 +21,8 @@
 Builtin snippets.
 """
 
-from __future__ import unicode_literals
 
-try:
-    import builtins # py3
-except ImportError:
-    import __builtin__ as builtins # py2
-
+import builtins
 import collections
 
 # postpone translation
@@ -139,7 +134,10 @@ def main():
 """-*- menu: text; python;
 import lasptyqu
 left, right = lasptyqu.preferred().secondary
-text = left + text + right
+if text:
+    text = left + text + right
+else:
+    text = [left, CURSOR, right]
 """),
 
 
@@ -147,7 +145,10 @@ text = left + text + right
 """-*- menu: text; python;
 import lasptyqu
 left, right = lasptyqu.preferred().primary
-text = left + text + right
+if text:
+    text = left + text + right
+else:
+    text = [left, CURSOR, right]
 """),
 
 
@@ -262,7 +263,7 @@ r"""-*- menu: blocks; name: repunf; selection: strip;
 'relative': T(_("Relative Music"),
 r"""-*- name: rel;
 \relative c$CURSOR'$ANCHOR {
-""" '   $SELECTION' r"""  
+""" '   $SELECTION' r"""
 }"""),
 
 
@@ -408,8 +409,13 @@ def main():
 """),
 
 
-'comment': T(_("Comment"),
-r"""-*- python; indent: no;
+'comment': T(_("snippet: add comment characters", "Comment"),
+r"""-*- python; indent: no; menu: comment;
+
+# get text before and after the selection
+import cursortools
+before, text, after = cursortools.partition(cursor)
+
 # determine state
 for s in state[::-1]:
     if s in ('lilypond', 'html', 'scheme'):
@@ -425,9 +431,17 @@ def html():
 
 def lilypond():
     if '\n' in text:
-        return '% ' + text.replace('\n', '\n% ')
+        if text.endswith('\n'):
+            return '% ' + text[:-1].replace('\n', '\n% ') + '\n'
+        elif after and not after.isspace():
+            return '%{ ' + text + '%} '
+        else:
+            return '% ' + text.replace('\n', '\n% ')
     elif text:
-        return '%{ ' + text + '%}'
+        if after and not after.isspace():
+            return '%{ ' + text + '%} '
+        else:
+            return '% ' + text + after
     else:
         return '% '
 
@@ -443,49 +457,59 @@ elif s == 'html':
     text = html()
 elif s == 'scheme':
     text = scheme()
+
 """),
 
 
-'uncomment': T(_("Uncomment"),
-r"""-*- python; indent: no;
+'uncomment': T(_("snippet: remove comment characters", "Uncomment"),
+r"""-*- python; indent: no; menu: comment;
 import re
 
-# determine state
-for s in state[::-1]:
-    if s in ('lilypond', 'html', 'scheme'):
-        break
-else:
-    s = 'lilypond'
+def main():
+    text = globals()['text']
+    # determine state
+    for s in state[::-1]:
+        if s in ('lilypond', 'html', 'scheme'):
+            break
+    else:
+        s = 'lilypond'
 
-def html(text):
-    if text:
-        text = text.replace('<!-- ', '')
-        text = text.replace(' -->', '')
-        text = text.replace('<!--', '')
-        text = text.replace('-->', '')
+    def html(text):
+        if text:
+            text = text.replace('<!-- ', '')
+            text = text.replace(' -->', '')
+            text = text.replace('<!--', '')
+            text = text.replace('-->', '')
+            return text
+
+    def lilypond(text):
+        if text.lstrip().startswith('%{'):
+            if text.lstrip().startswith('%{ '):
+                text = text.lstrip()[3:]
+            else:
+                text = text.lstrip()[2:]
+            if text.rstrip().endswith('%}'):
+                text = text.rstrip()[:-2]
+        else:
+            if not text:
+                cursor.select(cursor.BlockUnderCursor)
+                text = cursor.selection().toPlainText()
+            text = re.compile(r'^(\s*)%+ ?', re.M).sub(r'\1', text)
         return text
 
-def lilypond(text):
-    if text.lstrip().startswith('%{'):
-        if text.lstrip().startswith('%{ '):
-            text = text.lstrip()[3:]
-        else:
-            text = text.lstrip()[2:]
-        if text.rstrip().endswith('%}'):
-            text = text.rstrip()[:-2]
-    else:
-        text = re.compile(r'^(\s*)%+ ?', re.M).sub(r'\1', text)
-    return text
+    def scheme(text):
+        return re.compile(r'^(\s*);+', re.M).sub(r'\1', text)
 
-def scheme(text):
-    return re.compile(r'^(\s*);+', re.M).sub(r'\1', text)
+    if s == 'lilypond':
+        text = lilypond(text)
+    elif s == 'html':
+        text = html(text)
+    elif s == 'scheme':
+        text = scheme(text)
 
-if s == 'lilypond':
-    text = lilypond(text)
-elif s == 'html':
-    text = html(text)
-elif s == 'scheme':
-    text = scheme(text)
+    if text != cursor.selection().toPlainText():
+        cursor.insertText(text)
+
 """),
 
 
@@ -523,7 +547,7 @@ if dlg.exec_():
 
 'last_note': T(_("Last note or chord"),
 r"""-*- python; menu: music; symbol: note_ellipsis;
-# This snippet reads back the last entered note or chord and 
+# This snippet reads back the last entered note or chord and
 # inserts it again. It removes the octave mark from a note of the first
 # note of a chord if the music is in relative mode.
 
@@ -645,7 +669,7 @@ global = {
 chordNames = \chordmode {
   \global
   c1
-  
+
 }
 
 melody = \relative c'' {
@@ -655,8 +679,8 @@ melody = \relative c'' {
 }
 
 words = \lyricmode {
-  
-  
+
+
 }
 
 \score {
@@ -689,43 +713,43 @@ global = {
 soprano = \relative c'' {
   \global
   $CURSORc4
-  
+
 }
 
 alto = \relative c' {
   \global
   c4
-  
+
 }
 
 tenor = \relative c' {
   \global
   c4
-  
+
 }
 
 bass = \relative c {
   \global
   c4
-  
+
 }
 
 verseOne = \lyricmode {
   \set stanza = "1."
   hi
-  
+
 }
 
 verseTwo = \lyricmode {
   \set stanza = "2."
   ha
-  
+
 }
 
 verseThree = \lyricmode {
   \set stanza = "3."
   ho
-  
+
 }
 
 \score {

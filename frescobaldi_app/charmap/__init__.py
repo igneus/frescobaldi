@@ -21,10 +21,9 @@
 The special characters tool.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QKeySequence
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QKeySequence
 
 import panel
 
@@ -39,13 +38,13 @@ class CharMap(panel.Panel):
     def translateUI(self):
         self.setWindowTitle(_("Special Characters"))
         self.toggleViewAction().setText(_("Special Charac&ters"))
-        
+
     def createWidget(self):
         from . import widget
         w = widget.Widget(self)
         w.charmap.charmap.characterClicked.connect(self.insertCharacter)
         return w
-    
+
     def insertCharacter(self, character):
         character = character.rstrip('\0')  # PyQt bug workaround
         self.mainwindow().textCursor().insertText(character)

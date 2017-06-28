@@ -22,13 +22,13 @@ Code to use LilyPond-generated SVGs as icons.
 The default black color will be adjusted to the default Text color.
 """
 
-from __future__ import unicode_literals
 
 import os
 
-from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QApplication, QIcon, QIconEngineV2, QImage, QPainter, QPixmap, QStyleOption
-from PyQt4.QtSvg import QSvgRenderer
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon, QIconEngine, QImage, QPainter, QPixmap
+from PyQt5.QtWidgets import QApplication, QStyleOption
+from PyQt5.QtSvg import QSvgRenderer
 
 __all__ = ["icon"]
 
@@ -48,9 +48,9 @@ def icon(name):
 
 def pixmap(name, size, mode, state):
     """Returns a (possibly cached) pixmap of the name and size with the default text color.
-    
+
     The state argument is ignored for now.
-    
+
     """
     if mode == QIcon.Selected:
         color = QApplication.palette().highlightedText().color()
@@ -75,17 +75,17 @@ def pixmap(name, size, mode, state):
         return pixmap
 
 
-class Engine(QIconEngineV2):
+class Engine(QIconEngine):
     """Engine to provide renderings of SVG icons in the default text color."""
     def __init__(self, name):
         super(Engine, self).__init__()
         self._name = name
-        
+
     def pixmap(self, size, mode, state):
         return pixmap(self._name, size, mode, state)
-        
+
     def paint(self, painter, rect, mode, state):
         p = self.pixmap(rect.size(), mode, state)
         painter.drawPixmap(rect, p)
-        
+
 

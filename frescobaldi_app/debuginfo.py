@@ -21,9 +21,10 @@
 Provides version information of important supporting modules.
 """
 
-from __future__ import unicode_literals
 
 import functools
+import sys
+import os
 
 import appinfo
 
@@ -51,13 +52,13 @@ def sip_version():
 
 @_catch_unknown
 def pyqt_version():
-    import PyQt4.QtCore
-    return PyQt4.QtCore.PYQT_VERSION_STR
+    import PyQt5.QtCore
+    return PyQt5.QtCore.PYQT_VERSION_STR
 
 @_catch_unknown
 def qt_version():
-    import PyQt4.QtCore
-    return PyQt4.QtCore.QT_VERSION_STR
+    import PyQt5.QtCore
+    return PyQt5.QtCore.QT_VERSION_STR
 
 @_catch_unknown
 def python_version():
@@ -76,13 +77,25 @@ def ly_version():
 
 @_catch_unknown
 def poppler_version():
-    import popplerqt4
-    return '.'.join(format(n) for n in popplerqt4.poppler_version())
+    import popplerqt5
+    return '.'.join(format(n) for n in popplerqt5.poppler_version())
 
 @_catch_unknown
 def python_poppler_version():
-    import popplerqt4
-    return '.'.join(format(n) for n in popplerqt4.version())
+    import popplerqt5
+    return '.'.join(format(n) for n in popplerqt5.version())
+
+if sys.platform.startswith('darwin'):
+    @_catch_unknown
+    def mac_installation_kind():
+        import macosx
+        if macosx.inside_app_bundle():
+            if os.path.islink(os.getcwd() + '/../MacOS/python'):
+                return 'lightweight app bundle'
+            else:
+                return 'standalone app bundle'
+        else:
+            return 'command line'
 
 
 def version_info_named():
@@ -96,6 +109,8 @@ def version_info_named():
     yield "poppler", poppler_version()
     yield "python-poppler-qt", python_poppler_version()
     yield "OS", operating_system()
+    if sys.platform.startswith('darwin'):
+        yield "installation kind", mac_installation_kind()
 
 
 def version_info_string(separator='\n'):

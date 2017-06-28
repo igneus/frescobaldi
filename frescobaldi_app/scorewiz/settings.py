@@ -21,11 +21,11 @@
 The score settings widget.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import QSettings
-from PyQt4.QtGui import (QCheckBox, QComboBox, QGridLayout, QGroupBox,
-                         QHBoxLayout, QLabel, QVBoxLayout, QWidget)
+from PyQt5.QtCore import QSettings
+from PyQt5.QtWidgets import (QCheckBox, QComboBox, QGridLayout, QGroupBox,
+                             QHBoxLayout, QLabel, QVBoxLayout, QWidget,
+                             QButtonGroup, QRadioButton)
 
 import app
 import po.setup
@@ -40,17 +40,17 @@ class SettingsWidget(QWidget):
         super(SettingsWidget, self).__init__(parent)
         grid = QGridLayout()
         self.setLayout(grid)
-        
+
         self.scoreProperties = ScoreProperties(self)
         self.generalPreferences = GeneralPreferences(self)
         self.lilyPondPreferences = LilyPondPreferences(self)
         self.instrumentNames = InstrumentNames(self)
-        
+
         grid.addWidget(self.scoreProperties, 0, 0)
         grid.addWidget(self.generalPreferences, 0, 1)
         grid.addWidget(self.lilyPondPreferences, 1, 0)
         grid.addWidget(self.instrumentNames, 1, 1)
-    
+
     def clear(self):
         self.scoreProperties.tempo.clear()
         self.scoreProperties.keyNote.setCurrentIndex(0)
@@ -61,61 +61,90 @@ class SettingsWidget(QWidget):
 class ScoreProperties(QGroupBox, scoreproperties.ScoreProperties):
     def __init__(self, parent):
         super(ScoreProperties, self).__init__(parent)
-        
+
         layout = QVBoxLayout()
         self.setLayout(layout)
-        
+
         self.createWidgets()
         self.layoutWidgets(layout)
-        
+
         app.translateUI(self)
-        
+
         scorewiz = self.window()
         scorewiz.pitchLanguageChanged.connect(self.setPitchLanguage)
         self.setPitchLanguage(scorewiz.pitchLanguage())
-        
+
+        self.loadSettings()
+        self.window().finished.connect(self.saveSettings)
+
     def translateUI(self):
         self.translateWidgets()
         self.setTitle(_("Score properties"))
-    
+
+    def loadSettings(self):
+        s = QSettings()
+        s.beginGroup('scorewiz/scoreproperties')
+        self.metronomeRound.setChecked(s.value('round_metronome', True, bool))
+
+    def saveSettings(self):
+        s = QSettings()
+        s.beginGroup('scorewiz/scoreproperties')
+        s.setValue('round_metronome', self.metronomeRound.isChecked())
 
 
 class GeneralPreferences(QGroupBox):
     def __init__(self, parent):
         super(GeneralPreferences, self).__init__(parent)
-        
+
         layout = QVBoxLayout()
         self.setLayout(layout)
-        
+
         self.typq = QCheckBox()
         self.tagl = QCheckBox()
         self.barnum = QCheckBox()
         self.neutdir = QCheckBox()
         self.midi = QCheckBox()
         self.metro = QCheckBox()
+
+        # paper size
         self.paperSizeLabel = QLabel()
         self.paper = QComboBox()
         self.paper.addItems(paperSizes)
-        self.paperLandscape = QCheckBox(enabled=False)
         self.paper.activated.connect(self.slotPaperChanged)
-        
+        paperSizeBox = QHBoxLayout(spacing=2)
+        paperSizeBox.addWidget(self.paperSizeLabel)
+        paperSizeBox.addWidget(self.paper)
+
+        # paper orientation
+        self.paperRegularBtn = QRadioButton(self)
+        self.paperLandscapeBtn = QRadioButton(self)
+        self.paperRotatedBtn = QRadioButton(self)
+        self.paperOrientationBox = QGroupBox()
+        pg = self.paperOrientationGroup = QButtonGroup()
+        pg.setExclusive(True)
+        pg.addButton(self.paperRegularBtn, 0)
+        pg.addButton(self.paperLandscapeBtn, 1)
+        pg.addButton(self.paperRotatedBtn, 2)
+        orientationBox = QHBoxLayout()
+        orientationBox.addWidget(self.paperRegularBtn)
+        orientationBox.addWidget(self.paperLandscapeBtn)
+        orientationBox.addWidget(self.paperRotatedBtn)
+        self.paperOrientationBox.setLayout(orientationBox)
+
         layout.addWidget(self.typq)
         layout.addWidget(self.tagl)
         layout.addWidget(self.barnum)
         layout.addWidget(self.neutdir)
         layout.addWidget(self.midi)
         layout.addWidget(self.metro)
-        
-        box = QHBoxLayout(spacing=2)
-        box.addWidget(self.paperSizeLabel)
-        box.addWidget(self.paper)
-        box.addWidget(self.paperLandscape)
-        layout.addLayout(box)
+        layout.addLayout(paperSizeBox)
+        layout.addWidget(self.paperOrientationBox)
+
         app.translateUI(self)
-        
+
         self.loadSettings()
         self.window().finished.connect(self.saveSettings)
-        
+
     def translateUI(self):
         self.setTitle(_("General preferences"))
         self.typq.setText(_("Use typographical quotes"))
@@ -139,18 +168,26 @@ class GeneralPreferences(QGroupBox):
         self.metro.setToolTip(_(
             "If checked, show the metronome mark at the beginning of the "
             "score. The MIDI output also uses the metronome setting."))
-        # paper size:
+        # paper size and orientation:
         self.paperSizeLabel.setText(_("Paper size:"))
         self.paper.setItemText(0, _("Default"))
-        self.paperLandscape.setText(_("Landscape"))
-  
+        self.paperOrientationBox.setTitle(_("Orientation:"))
+        self.paperRegularBtn.setText(_("Regular"))
+        self.paperRegularBtn.setToolTip(_("Regular portrait orientation."))
+        self.paperLandscapeBtn.setText(_("Landscape"))
+        self.paperLandscapeBtn.setToolTip(_(
+            "Set paper orientation to landscape while keeping upright printing orientation."))
+        self.paperRotatedBtn.setText(_("Rotated"))
+        self.paperRotatedBtn.setToolTip(_(
+            "Rotate print on regular paper."))
+
     def slotPaperChanged(self, index):
-        self.paperLandscape.setEnabled(bool(index))
-    
+        self.paperOrientationBox.setEnabled(bool(index))
+
     def getPaperSize(self):
         """Returns the configured papersize or the empty string for default."""
         return paperSizes[self.paper.currentIndex()]
-    
+
     def loadSettings(self):
         s = QSettings()
         s.beginGroup('scorewiz/preferences')
@@ -160,11 +197,12 @@ class GeneralPreferences(QGroupBox):
         self.neutdir.setChecked(s.value('smart_neutral_direction', False, bool))
         self.midi.setChecked(s.value('midi', True, bool))
         self.metro.setChecked(s.value('metronome_mark', False, bool))
-        psize = s.value('paper_size', '', type(""))
+        psize = s.value('paper_size', '', str)
         enable = bool(psize and psize in paperSizes)
         self.paper.setCurrentIndex(paperSizes.index(psize) if enable else 0)
-        self.paperLandscape.setChecked(s.value('paper_landscape', False, bool))
-        self.paperLandscape.setEnabled(enable)
+        orientation = s.value('paper_rotation', 0, int)
+        self.paperOrientationGroup.button(orientation).setChecked(True)
+        self.paperOrientationBox.setEnabled(enable)
 
     def saveSettings(self):
         s = QSettings()
@@ -176,16 +214,16 @@ class GeneralPreferences(QGroupBox):
         s.setValue('midi', self.midi.isChecked())
         s.setValue('metronome_mark', self.metro.isChecked())
         s.setValue('paper_size', paperSizes[self.paper.currentIndex()])
-        s.setValue('paper_landscape', self.paperLandscape.isChecked())
+        s.setValue('paper_rotation', self.paperOrientationGroup.checkedId())
 
-        
+
 class InstrumentNames(QGroupBox):
     def __init__(self, parent):
         super(InstrumentNames, self).__init__(parent, checkable=True, checked=True)
-        
+
         grid = QGridLayout()
         self.setLayout(grid)
-        
+
         self.firstSystemLabel = QLabel()
         self.firstSystem = QComboBox()
         self.firstSystemLabel.setBuddy(self.firstSystem)
@@ -202,7 +240,7 @@ class InstrumentNames(QGroupBox):
         self.otherSystems.setModel(listmodel.ListModel(
             (lambda: _("Long"), lambda: _("Short"), lambda: _("None")), self.otherSystems,
             display = listmodel.translate))
-        
+
         self._langs = l = ['','C']
         l.extend(sorted(po.available()))
         def display(lang):
@@ -212,7 +250,7 @@ class InstrumentNames(QGroupBox):
                 return _("Default")
             return language_names.languageName(lang, po.setup.current())
         self.language.setModel(listmodel.ListModel(l, self.language, display=display))
-        
+
         grid.addWidget(self.firstSystemLabel, 0, 0)
         grid.addWidget(self.firstSystem, 0, 1)
         grid.addWidget(self.otherSystemsLabel, 1, 0)
@@ -222,7 +260,7 @@ class InstrumentNames(QGroupBox):
         app.translateUI(self)
         self.loadSettings()
         self.window().finished.connect(self.saveSettings)
-        
+
     def translateUI(self):
         self.setTitle(_("Instrument names"))
         self.firstSystemLabel.setText(_("First system:"))
@@ -237,14 +275,14 @@ class InstrumentNames(QGroupBox):
         self.firstSystem.model().update()
         self.otherSystems.model().update()
         self.language.model().update()
-    
+
     def getLanguage(self):
         """Returns the language the user has set.
-        
+
         '' means:  default (use same translation as system)
         'C' means: English (untranslated)
         or a language code that is available in Frescobaldi's translation.
-        
+
         """
         return self._langs[self.language.currentIndex()]
 
@@ -253,14 +291,14 @@ class InstrumentNames(QGroupBox):
         s.beginGroup('scorewiz/instrumentnames')
         self.setChecked(s.value('enabled', True, bool))
         allow = ['long', 'short']
-        first = s.value('first', '', type(""))
+        first = s.value('first', '', str)
         self.firstSystem.setCurrentIndex(allow.index(first) if first in allow else 0)
         allow = ['long', 'short', 'none']
-        other = s.value('other', '', type(""))
+        other = s.value('other', '', str)
         self.otherSystems.setCurrentIndex(allow.index(other) if other in allow else 2)
-        language = s.value('language', '', type(""))
+        language = s.value('language', '', str)
         self.language.setCurrentIndex(self._langs.index(language) if language in self._langs else 0)
-    
+
     def saveSettings(self):
         s = QSettings()
         s.beginGroup('scorewiz/instrumentnames')
@@ -269,31 +307,31 @@ class InstrumentNames(QGroupBox):
         s.setValue('other', ('long', 'short', 'none')[self.otherSystems.currentIndex()])
         s.setValue('language', self._langs[self.language.currentIndex()])
 
-        
+
 class LilyPondPreferences(QGroupBox):
     def __init__(self, parent):
         super(LilyPondPreferences, self).__init__(parent)
-        
+
         grid = QGridLayout()
         self.setLayout(grid)
-        
+
         self.pitchLanguageLabel = QLabel()
         self.pitchLanguage = QComboBox()
         self.versionLabel = QLabel()
         self.version = QComboBox(editable=True)
-        
+
         self.pitchLanguage.addItem('')
         self.pitchLanguage.addItems([lang.title() for lang in sorted(scoreproperties.keyNames)])
         self.version.addItem(lilypondinfo.preferred().versionString())
         for v in ("2.18.0", "2.16.0", "2.14.0", "2.12.0"):
             if v != lilypondinfo.preferred().versionString():
                 self.version.addItem(v)
-        
+
         grid.addWidget(self.pitchLanguageLabel, 0, 0)
         grid.addWidget(self.pitchLanguage, 0, 1)
         grid.addWidget(self.versionLabel, 1, 0)
         grid.addWidget(self.version, 1, 1)
-        
+
         self.pitchLanguage.activated.connect(self.slotPitchLanguageChanged)
         app.translateUI(self)
         self.loadSettings()
@@ -315,7 +353,7 @@ class LilyPondPreferences(QGroupBox):
         else:
             language = self.pitchLanguage.currentText().lower()
         self.window().setPitchLanguage(language)
-        
+
     def loadSettings(self):
         language = self.window().pitchLanguage()
         languages = list(sorted(scoreproperties.keyNames))

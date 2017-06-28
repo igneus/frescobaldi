@@ -23,12 +23,11 @@ An Object Editor
 
 # Note: This is only a very first stub
 
-from __future__ import unicode_literals
 
 import sys
 
-from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QKeySequence
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QKeySequence
 
 import panel
 
@@ -42,7 +41,7 @@ class ObjectEditor(panel.Panel):
     def translateUI(self):
         self.setWindowTitle(_("Object Editor"))
         self.toggleViewAction().setText(_("O&bject Editor"))
-        
+
     def createWidget(self):
         from . import widget
         w = widget.Widget(self)

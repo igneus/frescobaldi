@@ -24,22 +24,21 @@ It is used to edit a Document. The ViewManager (see viewmanager.py)
 has support for showing multiple Views in a window.
 """
 
-from __future__ import unicode_literals
 
 import weakref
 
-from PyQt4.QtCore import QEvent, QMimeData, QSettings, Qt, QTimer, pyqtSignal
-from PyQt4.QtGui import (
-    QApplication, QContextMenuEvent, QKeySequence, QPainter, QPlainTextEdit,
-    QTextCursor)
+from PyQt5.QtCore import QEvent, QMimeData, QSettings, Qt, QTimer, pyqtSignal
+from PyQt5.QtGui import (
+    QContextMenuEvent, QKeySequence, QPainter, QTextCursor, QCursor)
+from PyQt5.QtWidgets import QApplication, QPlainTextEdit, QToolTip
 
 import app
-import homekey
 import metainfo
 import textformats
 import cursortools
 import variables
-
+import cursorkeys
+import open_file_at_cursor
 
 metainfo.define('auto_indent', True)
 metainfo.define('position', 0)
@@ -47,19 +46,20 @@ metainfo.define('position', 0)
 
 class View(QPlainTextEdit):
     """View is the text editor widget a Document is displayed and edited with.
-    
+
     It is basically a QPlainTextEdit with some extra features:
     - it draws a grey cursor when out of focus
     - it reads basic palette colors from the preferences
     - it determines tab width from the document variables (defaulting to 8 characters)
     - it stores the cursor position in the metainfo
     - it runs the auto_indenter when enabled (also checked via metainfo)
-    - it can display a widget in the bottom using showWidget and hideWidget.
-    
+
     """
     def __init__(self, document):
-        """Creates the View for the given document."""
+        """Create the View for the given document."""
         super(View, self).__init__()
+        # to enable mouseMoveEvent to display tooltip
+        super(View, self).setMouseTracking(True)
         self.setDocument(document)
         self.setLineWrapMode(QPlainTextEdit.NoWrap)
         self.setCursorWidth(2)
@@ -67,6 +67,7 @@ class View(QPlainTextEdit):
         document.loaded.connect(self.restoreCursor)
         document.loaded.connect(self.setTabWidth)
         document.closed.connect(self.slotDocumentClosed)
+        self.textChanged.connect(self.invalidateCurrentBlock)
         variables.manager(document).changed.connect(self.setTabWidth)
         self.restoreCursor()
         app.settingsChanged.connect(self.readSettings)
@@ -74,9 +75,25 @@ class View(QPlainTextEdit):
         # line wrap preference is only read on init
         wrap = QSettings().value("view_preferences/wrap_lines", False, bool)
         self.setLineWrapMode(QPlainTextEdit.WidgetWidth if wrap else QPlainTextEdit.NoWrap)
+        self.installEventFilter(cursorkeys.handler)
+        self.toolTipInfo = []
+        self.block_at_mouse = None
+        self.include_target = []
         app.viewCreated(self)
 
     def event(self, ev):
+        """General event handler.
+
+        This is reimplemented to:
+
+        - prevent inserting the hard line separator, which makes no sense in
+          plain text
+
+        - prevent handling Undo and Redo, they work better via the menu actions
+
+        - handle Tab and Backtab to change the indent
+
+        """
         if ev in (
                 # avoid the line separator, makes no sense in plain text
                 QKeySequence.InsertLineSeparator,
@@ -121,10 +138,18 @@ class View(QPlainTextEdit):
         return super(View, self).event(ev)
 
     def keyPressEvent(self, ev):
-        if homekey.handle(self, ev):
-            return
-        super(View, self).keyPressEvent(ev)
+        """Reimplemented to perform actions after a key has been pressed.
+
+        Currently handles:
+
+        - indent change on Enter, }, # or >
         
+        - update the tooltip info when Ctrl is pressed
+
+        """
+        super(View, self).keyPressEvent(ev)
+        if ev.key() == Qt.Key_Control and self.include_target:
+            self.viewport().setCursor(Qt.PointingHandCursor)
         if metainfo.info(self.document()).auto_indent:
             # run the indenter on Return or when the user entered a dedent token.
             import indent
@@ -134,7 +159,7 @@ class View(QPlainTextEdit):
                 # fix subsequent vertical moves
                 cursor.setPosition(cursor.position())
                 self.setTextCursor(cursor)
-            
+
     def focusOutEvent(self, ev):
         """Reimplemented to store the cursor position on focus out."""
         super(View, self).focusOutEvent(ev)
@@ -146,19 +171,19 @@ class View(QPlainTextEdit):
             ev.accept()
         else:
             super(View, self).dragEnterEvent(ev)
-        
+
     def dragMoveEvent(self, ev):
         """Reimplemented to avoid showing the cursor when dropping URLs."""
         if ev.mimeData().hasUrls():
             ev.accept()
         else:
             super(View, self).dragMoveEvent(ev)
-        
+
     def dropEvent(self, ev):
         """Called when something is dropped.
-        
+
         Calls dropEvent() of MainWindow if URLs are dropped.
-        
+
         """
         if ev.mimeData().hasUrls():
             self.window().dropEvent(ev)
@@ -174,15 +199,15 @@ class View(QPlainTextEdit):
                 color = self.palette().text().color()
                 color.setAlpha(128)
                 QPainter(self.viewport()).fillRect(rect, color)
-    
+
     def gotoTextCursor(self, cursor, numlines=3):
         """Go to the specified cursor.
-        
+
         If possible, at least numlines (default: 3) number of surrounding lines
         is shown. The number of surrounding lines can also be set in the
         preferences, under the key "view_preferences/context_lines". This
         setting takes precedence.
-        
+
         """
         numlines = QSettings().value("view_preferences/context_lines", numlines, int)
         if numlines > 0:
@@ -194,34 +219,41 @@ class View(QPlainTextEdit):
             c.movePosition(QTextCursor.Up, QTextCursor.MoveAnchor, numlines)
             self.setTextCursor(c)
         self.setTextCursor(cursor)
-    
+
     def readSettings(self):
+        """Read preferences and adjust to those.
+
+        Called on init and when app.settingsChanged fires.
+        Sets colors, font and tab width from the preferences.
+
+        """
         data = textformats.formatData('editor')
         self.setFont(data.font)
         self.setPalette(data.palette())
         self.setTabWidth()
-        
+
     def slotDocumentClosed(self):
+        """Store the current cursor position in a document on close"""
         if self.hasFocus():
             self.storeCursor()
-            
+
     def restoreCursor(self):
-        """Places the cursor on the position saved in metainfo."""
+        """Place the cursor on the position saved in metainfo."""
         cursor = QTextCursor(self.document())
         cursor.setPosition(metainfo.info(self.document()).position)
         self.setTextCursor(cursor)
         QTimer.singleShot(0, self.ensureCursorVisible)
-    
+
     def storeCursor(self):
         """Stores our cursor position in the metainfo."""
         metainfo.info(self.document()).position = self.textCursor().position()
 
     def setTabWidth(self):
-        """(Internal) Reads the tab-width variable and the font settings to set the tabStopWidth."""
+        """(Internal) Read the tab-width variable and the font settings to set the tabStopWidth."""
         tabwidth = QSettings().value("indent/tab_width", 8, int)
         tabwidth = self.fontMetrics().width(" ") * variables.get(self.document(), 'tab-width', tabwidth)
         self.setTabStopWidth(tabwidth)
-    
+
     def contextMenuEvent(self, ev):
         """Called when the user requests the context menu."""
         cursor = self.textCursor()
@@ -250,19 +282,45 @@ class View(QPlainTextEdit):
             if cursor.selectionStart() <= clicked.position() < cursor.selectionEnd():
                 clicked = cursor
             # include files?
-            import open_file_at_cursor
-            if open_file_at_cursor.open_file_at_cursor(self.window(), clicked):
+            if self.include_target:
+                import open_file_at_cursor
+                open_file_at_cursor.open_targets(self.window(), self.include_target)
                 return
             # go to definition?
             import definition
             if definition.goto_definition(self.window(), clicked):
                 return
         super(View, self).mousePressEvent(ev)
-    
+
+    def invalidateCurrentBlock(self):
+        """Make sure that tooltip info is recalculated after document changes"""
+        self.block_at_mouse = None
+
+    def mouseMoveEvent(self, ev):
+        """Track the mouse move to show the tooltip"""
+        super(View, self).mouseMoveEvent(ev)
+        cursor_at_mouse = self.cursorForPosition(ev.pos())
+        cur_block = cursor_at_mouse.block()
+        # Only check tooltip when changing line/block or after invalidating
+        if self.include_target or not cur_block == self.block_at_mouse:
+            self.block_at_mouse = cur_block
+            self.include_target = open_file_at_cursor.includeTarget(cursor_at_mouse)
+            if self.include_target:
+                if ev.modifiers() == Qt.ControlModifier:
+                   self.viewport().setCursor(QCursor(Qt.PointingHandCursor))
+                self.showIncludeToolTip()
+            else:
+                self.include_target = []
+                self.block_at_mouse = None
+                self.viewport().setCursor(Qt.IBeamCursor)
+                QToolTip.hideText()
+
+    def showIncludeToolTip(self):
+        """Show a tooltip with the currently determined include target"""
+        QToolTip.showText(QCursor.pos(), '\n'.join(self.include_target))
+
     def createMimeDataFromSelection(self):
         """Reimplemented to only copy plain text."""
         m = QMimeData()
         m.setText(self.textCursor().selection().toPlainText())
         return m
-
-

@@ -4,8 +4,8 @@ This branch
 This branch contains custom tweaks making workflow
 of the [In adiutorium](https://github.com/igneus/In-adiutorium) project more pleasant.
 
-README for Frescobaldi 2
-========================
+README for Frescobaldi
+======================
 
 Homepage: http://www.frescobaldi.org/  
 Main author: Wilbert Berendsen
@@ -29,8 +29,8 @@ Features:
 - Import ABC, Midi and MusicXML using the LilyPond-provided tools
 - Experimental export to MusicXML
 - Modern user interface with configurable colors, fonts and keyboard shortcuts
-- Translated into: Dutch, English, French, German, Italian, Czech, Russian,
-  Spanish, Galician, Turkish, Polish, Brazilian and Ukrainian.
+- Translated into: Dutch, English, French, German, Italian, Swedish, Czech,
+  Russian, Spanish, Galician, Turkish, Polish, Brazilian and Ukrainian.
 
 Music functions:
 
@@ -60,7 +60,7 @@ Here is an idea of the basic Frescobaldi workflow:
 - When a piece is finished, press Ctrl+Shift+P once to run LilyPond with point
   and click turned off (this results in a much smaller PDF file).
 
-Frescobaldi is written in Python and uses PyQt4 for its user interface.
+Frescobaldi is written in Python and uses PyQt for its user interface.
 See the INSTALL file for other requirements and installation instructions.
 
 

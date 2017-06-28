@@ -18,49 +18,48 @@
 # See http://www.gnu.org/licenses/ for more information.
 
 """
-A MIDI player for PyQt4.
+A MIDI player for PyQt5.
 """
 
 
-from __future__ import unicode_literals
 
 
-from PyQt4.QtCore import pyqtSignal, Qt, QThread, QTimer
+from PyQt5.QtCore import pyqtSignal, Qt, QThread, QTimer
 
 import midifile.player
 
 
 class Player(QThread, midifile.player.Player):
     """An implementation of midifile.player.Player using a QThread and QTimer.
-    
+
     emit signals:
-    
+
     stateChanged(playing):
         True or False if playing state changes
-        
+
     time(msec):
         The playing time, emit by default every 1000ms
-        
+
     beat(measnum, beat, num, den):
         the measure number, beat number, time signature numerator and denom.,
         where 0 = whole note, 1 = half note, 2 = quarter note, etc.
-    
+
     user(object):
         any user object that might be added to an event
-    
+
     """
     stateChanged = pyqtSignal(bool)
     time = pyqtSignal(int)
     beat = pyqtSignal(int, int, int, int)
     user = pyqtSignal(object)
-    
+
     def __init__(self, parent=None):
         QThread.__init__(self, parent)
         midifile.player.Player.__init__(self)
         self._timer = None
-    
+
     def run(self):
-        self._timer = QTimer(singleShot=True)
+        self._timer = QTimer(singleShot=True, timerType=Qt.PreciseTimer)
         self._timer.timeout.connect(self.timer_timeout, Qt.DirectConnection)
         self.timer_start_playing()
         self.stateChanged.emit(True)
@@ -68,20 +67,29 @@ class Player(QThread, midifile.player.Player):
             self.timer_stop_playing()
         self._timer = None
         self.stateChanged.emit(False)
-    
+
     def start(self):
         if self.has_events():
             QThread.start(self)
-    
+
     def stop(self):
         if self.isRunning():
             self.exit(1)
             self.wait()
-    
+
+    def set_position(self, position, offset=0):
+        """Overridden because we can't start/stop the timer from the gui thread."""
+        playing = self.isRunning()
+        if playing:
+            self.stop()
+        super(Player, self).set_position(position, offset)
+        if playing:
+            self.start()
+
     def timer_start(self, msec):
         """Starts the timer to fire once, the specified msec from now."""
         self._timer.start(int(msec))
-    
+
     def timer_stop(self):
         self._timer.stop()
 
@@ -91,10 +99,10 @@ class Player(QThread, midifile.player.Player):
 
     def time_event(self, time):
         self.time.emit(time)
-    
+
     def beat_event(self, measnum, beat, num, den):
         self.beat.emit(measnum, beat, num, den)
-    
+
     def user_event(self, obj):
         self.user.emit(obj)
 

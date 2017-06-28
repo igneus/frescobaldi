@@ -21,15 +21,11 @@
 Frescobaldi main menu.
 """
 
-from __future__ import unicode_literals
 
-try:
-    import builtins # py3
-except ImportError:
-    import __builtin__ as builtins # py2
+import builtins
 
-from PyQt4.QtCore import QSettings
-from PyQt4.QtGui import QMenu
+from PyQt5.QtCore import QSettings
+from PyQt5.QtWidgets import QMenu
 
 import app
 import icons
@@ -51,7 +47,6 @@ import matcher
 import file_import
 import file_export
 import browseriface
-import vcs
 
 
 # postpone translation
@@ -61,7 +56,7 @@ _ = lambda *args: lambda: builtins._(*args)
 def createMenus(mainwindow):
     """Adds all the menus to the mainwindow's menubar."""
     m = mainwindow.menuBar()
-    
+
     m.addMenu(menu_file(mainwindow))
     m.addMenu(menu_edit(mainwindow))
     m.addMenu(menu_view(mainwindow))
@@ -72,7 +67,7 @@ def createMenus(mainwindow):
     m.addMenu(menu_document(mainwindow))
     m.addMenu(menu_window(mainwindow))
     m.addMenu(menu_session(mainwindow))
-    if vcs.app_is_git_controlled():
+    if app.is_git_controlled():
         from vcs.menu import GitMenu
         m.addMenu(GitMenu(mainwindow))
     m.addMenu(menu_help(mainwindow))
@@ -83,9 +78,10 @@ class Menu(QMenu):
     def __init__(self, title_func, parent=None):
         """title_func should return the title for the menu when called."""
         super(Menu, self).__init__(parent)
+        self.setToolTipsVisible(True)
         self.title_func = title_func
         app.translateUI(self)
-    
+
     def translateUI(self):
         self.setTitle(self.title_func())
 
@@ -93,7 +89,7 @@ class Menu(QMenu):
 def menu_file(mainwindow):
     m = Menu(_("menu title", "&File"), mainwindow)
     ac = mainwindow.actionCollection
-    
+
     m.addAction(ac.file_new)
     m.addAction(scorewiz.ScoreWizard.instance(mainwindow).actionCollection.scorewiz)
     m.addMenu(snippet.menu.TemplateMenu(mainwindow))
@@ -123,7 +119,7 @@ def menu_file(mainwindow):
     m.addAction(ac.file_close_all)
     m.addSeparator()
     m.addAction(ac.file_quit)
-    if vcs.app_is_git_controlled():
+    if app.is_git_controlled():
         m.addAction(ac.file_restart)
     return m
 
@@ -131,7 +127,7 @@ def menu_file(mainwindow):
 def menu_file_import(mainwindow):
     m = Menu(_("submenu title", "&Import"), mainwindow)
     ac = file_import.FileImport.instance(mainwindow).actionCollection
-    
+
     m.addAction(ac.import_all)
     m.addSeparator()
     m.addAction(ac.import_musicxml)
@@ -144,13 +140,13 @@ def menu_file_export(mainwindow):
     m = Menu(_("submenu title", "&Export"), mainwindow)
     ac = mainwindow.actionCollection
     acfe = file_export.FileExport.instance(mainwindow).actionCollection
-    
-    if vcs.app_is_git_controlled() or QSettings().value("experimental-features", False, bool):
+
+    if app.is_git_controlled() or QSettings().value("experimental-features", False, bool):
         m.addAction(acfe.export_audio)
         m.addAction(acfe.export_musicxml)
     m.addAction(ac.export_colored_html)
     return m
-    
+
 
 def menu_edit(mainwindow):
     m = Menu(_("menu title", "&Edit"), mainwindow)
@@ -160,6 +156,7 @@ def menu_edit(mainwindow):
     m.addAction(ac.edit_redo)
     m.addSeparator()
     m.addAction(documentactions.get(mainwindow).actionCollection.edit_cut_assign)
+    m.addAction(documentactions.get(mainwindow).actionCollection.edit_move_to_include_file)
     m.addAction(ac.edit_cut)
     m.addAction(ac.edit_copy)
     m.addAction(panelmanager.manager(mainwindow).snippettool.actionCollection.copy_to_snippet)
@@ -176,13 +173,13 @@ def menu_edit(mainwindow):
     m.addAction(ac.edit_replace)
     m.addSeparator()
     m.addAction(ac.edit_preferences)
-    return m    
+    return m
 
 
 def menu_view(mainwindow):
     m = Menu(_("menu title", "&View"), mainwindow)
     ac = mainwindow.actionCollection
-    
+
     m.addAction(ac.view_next_document)
     m.addAction(ac.view_previous_document)
     m.addSeparator()
@@ -192,6 +189,7 @@ def menu_view(mainwindow):
     m.addMenu(menu_view_folding(mainwindow))
     m.addSeparator()
     m.addAction(documentactions.get(mainwindow).actionCollection.view_goto_file_or_definition)
+    m.addAction(ac.view_goto_line)
     ac = browseriface.get(mainwindow).actionCollection
     m.addAction(ac.go_back)
     m.addAction(ac.go_forward)
@@ -216,7 +214,7 @@ def menu_view(mainwindow):
 def menu_view_folding(mainwindow):
     m = Menu(_("submenu title", "&Folding"), mainwindow)
     ac = sidebar.SideBarManager.instance(mainwindow).actionCollection
-    
+
     m.addAction(ac.folding_enable)
     m.addSeparator()
     m.addAction(ac.folding_fold_current)
@@ -231,7 +229,7 @@ def menu_view_folding(mainwindow):
 def menu_music(mainwindow):
     m = Menu(_("menu title", "&Music"), mainwindow)
     ac = panelmanager.manager(mainwindow).musicview.actionCollection
-    
+
     m.addAction(ac.music_reload)
     m.addSeparator()
     m.addAction(ac.music_zoom_in)
@@ -247,6 +245,7 @@ def menu_music(mainwindow):
     m.addAction(ac.music_two_pages_first_left)
     m.addSeparator()
     m.addAction(ac.music_copy_image)
+    m.addAction(ac.music_copy_text)
     m.addSeparator()
     m.addAction(ac.music_jump_to_cursor)
     m.addAction(ac.music_sync_cursor)
@@ -262,7 +261,7 @@ def menu_snippets(mainwindow):
 def menu_lilypond(mainwindow):
     m = Menu(_("menu title", "&LilyPond"), mainwindow)
     ac = engrave.engraver(mainwindow).actionCollection
-    
+
     m.addAction(ac.engrave_sticky)
     m.addAction(ac.engrave_autocompile)
     m.addSeparator()
@@ -285,7 +284,7 @@ def menu_lilypond_generated_files(mainwindow):
 
 def menu_tools(mainwindow):
     m = Menu(_('menu title', '&Tools'), mainwindow)
-    
+
     ac = documentactions.get(mainwindow).actionCollection
     m.addAction(ac.tools_indent_auto)
     m.addAction(ac.tools_indent_indent)
@@ -327,8 +326,11 @@ def menu_tools_pitch(mainwindow):
     m = Menu(_('submenu title', "&Pitch"), mainwindow)
     m.setIcon(icons.get('tools-pitch'))
     ac = pitch.Pitch.instance(mainwindow).actionCollection
-    
+
     m.addAction(ac.pitch_language)
+    m.addSeparator()
+    m.addAction(ac.pitch_relative_assume_first_pitch_absolute)
+    m.addAction(ac.pitch_relative_write_startpitch)
     m.addSeparator()
     m.addAction(ac.pitch_rel2abs)
     m.addAction(ac.pitch_abs2rel)
@@ -336,13 +338,14 @@ def menu_tools_pitch(mainwindow):
     m.addAction(ac.pitch_transpose)
     m.addAction(ac.pitch_modal_transpose)
     m.addAction(ac.pitch_mode_shift)
+    m.addAction(ac.pitch_simplify)
     return m
 
 def menu_tools_rest(mainwindow):
     m = Menu(_('submenu title', "Rest"), mainwindow)
     m.setIcon(icons.get('tools-rest'))
     ac = rest.Rest.instance(mainwindow).actionCollection
-    
+
     m.addAction(ac.rest_fmrest2spacer)
     m.addAction(ac.rest_spacer2fmrest)
     m.addSeparator()
@@ -354,7 +357,7 @@ def menu_tools_rhythm(mainwindow):
     m = Menu(_('submenu title', "&Rhythm"), mainwindow)
     m.setIcon(icons.get('tools-rhythm'))
     ac = rhythm.Rhythm.instance(mainwindow).actionCollection
-    
+
     m.addAction(ac.rhythm_double)
     m.addAction(ac.rhythm_halve)
     m.addSeparator()
@@ -379,12 +382,16 @@ def menu_tools_quick_remove(mainwindow):
     m = Menu(_('submenu title', "&Quick Remove"), mainwindow)
     m.setIcon(icons.get('edit-clear'))
     ac = documentactions.DocumentActions.instance(mainwindow).actionCollection
-    
+
+    m.addAction(ac.tools_quick_remove_comments)
     m.addAction(ac.tools_quick_remove_articulations)
     m.addAction(ac.tools_quick_remove_ornaments)
     m.addAction(ac.tools_quick_remove_instrument_scripts)
     m.addAction(ac.tools_quick_remove_slurs)
+    m.addAction(ac.tools_quick_remove_beams)
+    m.addAction(ac.tools_quick_remove_ligatures)
     m.addAction(ac.tools_quick_remove_dynamics)
+    m.addAction(ac.tools_quick_remove_fingerings)
     m.addAction(ac.tools_quick_remove_markup)
     return m
 

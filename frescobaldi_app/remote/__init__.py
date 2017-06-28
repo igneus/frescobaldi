@@ -21,13 +21,12 @@
 Inter-Process Communication with already running Frescobaldi instances.
 """
 
-from __future__ import unicode_literals
 
 import os
 import sys
 
-from PyQt4.QtCore import QSettings
-from PyQt4.QtNetwork import QLocalServer, QLocalSocket
+from PyQt5.QtCore import QSettings
+from PyQt5.QtNetwork import QLocalServer, QLocalSocket
 
 import app
 import appinfo
@@ -52,9 +51,9 @@ def init():
     global _server
     if _server is not None:
         return
-    
+
     server = QLocalServer(None)
-    
+
     # find a free socket name to use
     for name in ids():
         if server.listen(name):
@@ -103,30 +102,30 @@ def ids(count=3):
 
 def generate_id():
     """Generate a name for the IPC socket.
-    
+
     The name is unique for the application, the user id and the DISPLAY
     on X11.
-    
+
     """
     name = [appinfo.name]
-    
+
     try:
         name.append(format(os.getuid()))
     except AttributeError:
         pass
-    
+
     display = os.environ.get("DISPLAY")
     if display:
         name.append(display.replace(':', '_').replace('/', '_'))
-    
+
     return '-'.join(name)
 
 
 def enabled():
     """Return whether remote support is enabled.
-    
+
     By default it is enabled.
-    
+
     """
     return QSettings().value('allow_remote', True, bool)
 

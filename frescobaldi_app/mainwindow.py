@@ -22,20 +22,19 @@ Frescobaldi Main Window.
 """
 
 from __future__ import division
-from __future__ import unicode_literals
 
 import itertools
 import os
 import sys
 import weakref
 
-from PyQt4.QtCore import (pyqtSignal, QByteArray, QDir, QMimeData, QSettings,
+from PyQt5.QtCore import (pyqtSignal, QByteArray, QDir, QMimeData, QSettings,
                           QSize, Qt, QUrl)
-from PyQt4.QtGui import (QAbstractPrintDialog, QAction, QApplication,
-                         QFileDialog, QKeySequence, QMainWindow, QMenu,
-                         QMessageBox, QPlainTextEdit, QPrintDialog, QPrinter,
-                         QTextCursor, QTextDocument, QVBoxLayout, QWhatsThis,
-                         QWidget)
+from PyQt5.QtGui import (QKeySequence, QTextCursor, QTextDocument)
+from PyQt5.QtPrintSupport import (QAbstractPrintDialog, QPrintDialog, QPrinter)
+from PyQt5.QtWidgets import (QAction, QApplication, QFileDialog, QMainWindow,
+                             QMenu, QMessageBox, QPlainTextEdit, QVBoxLayout,
+                             QWhatsThis, QWidget, QInputDialog)
 
 import app
 import backup
@@ -60,7 +59,6 @@ import engrave
 import scorewiz
 import externalchanges
 import browseriface
-import vcs
 import file_import
 
 
@@ -71,6 +69,9 @@ class MainWindow(QMainWindow):
 
     # only emitted when this is the last MainWindow to close
     aboutToCloseLast = pyqtSignal()
+
+    # emitted when all editor documents have been closed
+    allDocumentsClosed = pyqtSignal()
 
     # both signals emit (current, previous)
     currentDocumentChanged = pyqtSignal(document.Document, document.Document)
@@ -268,7 +269,8 @@ class MainWindow(QMainWindow):
 
         window_title = app.caption(" ".join(name))
 
-        if vcs.app_is_git_controlled():
+        if app.is_git_controlled():
+            import vcs
             window_title += " " + vcs.app_active_branch_window_title()
 
         self.setWindowTitle(window_title)
@@ -323,16 +325,18 @@ class MainWindow(QMainWindow):
         If modified, asks the user. The document is not closed.
         """
         if not doc.isModified():
-            return True
-        self.setCurrentDocument(doc, findOpenView=True)
-        res = QMessageBox.warning(self, _("dialog title", "Close Document"),
-            _("The document \"{name}\" has been modified.\n"
-            "Do you want to save your changes or discard them?").format(name=doc.documentName()),
-            QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel)
-        if res == QMessageBox.Save:
-            return self.saveDocument(doc)
+            allow_close = True
         else:
-            return res == QMessageBox.Discard
+            self.setCurrentDocument(doc, findOpenView=True)
+            res = QMessageBox.warning(self, _("dialog title", "Close Document"),
+                _("The document \"{name}\" has been modified.\n"
+                "Do you want to save your changes or discard them?").format(name=doc.documentName()),
+                QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel)
+            if res == QMessageBox.Save:
+                allow_close = self.saveDocument(doc)
+            else:
+                allow_close = res == QMessageBox.Discard
+        return allow_close and engrave.engraver(self).queryCloseDocument(doc)
 
     def createPopupMenu(self):
         """ Adds an entry to the popup menu to show/hide the tab bar. """
@@ -374,7 +378,7 @@ class MainWindow(QMainWindow):
         preserve stacking order, etc.
 
         """
-        name = settings.value('name', '', type(""))
+        name = settings.value('name', '', str)
         if name:
             self.setObjectName(name)
         self.restoreGeometry(settings.value('geometry', QByteArray(), QByteArray))
@@ -475,8 +479,8 @@ class MainWindow(QMainWindow):
         d = document.Document()
         self.setCurrentDocument(d)
         s = QSettings()
-        ndoc = s.value("new_document", "empty", type(""))
-        template = s.value("new_document_template", "", type(""))
+        ndoc = s.value("new_document", "empty", str)
+        template = s.value("new_document_template", "", str)
         if ndoc == "template" and template:
             from snippet import snippets, insert
             if snippets.text(template):
@@ -491,11 +495,16 @@ class MainWindow(QMainWindow):
 
     def openDocument(self):
         """ Displays an open dialog to open one or more documents. """
-        ext = os.path.splitext(self.currentDocument().url().path())[1]
+        d = self.currentDocument()
+        if d:
+            ext = os.path.splitext(d.url().path())[1]
+            directory = os.path.dirname(d.url().toLocalFile()) or app.basedir()
+        else:
+            ext = ".ly"
+            directory = app.basedir()
         filetypes = app.filetypes(ext)
         caption = app.caption(_("dialog title", "Open File"))
-        directory = os.path.dirname(self.currentDocument().url().toLocalFile()) or app.basedir()
-        files = QFileDialog.getOpenFileNames(self, caption, directory, filetypes)
+        files = QFileDialog.getOpenFileNames(self, caption, directory, filetypes)[0]
         urls = [QUrl.fromLocalFile(filename) for filename in files]
         docs = self.openUrls(urls)
         if docs:
@@ -513,13 +522,20 @@ class MainWindow(QMainWindow):
             if filename:
                 filetypes = app.filetypes(os.path.splitext(filename)[1])
             else:
-                directory = app.basedir() # default directory to save to
+                # find a suitable directory to save to
+                for d in self.historyManager.documents()[1::]:
+                    if d.url().toLocalFile():
+                        directory = os.path.dirname(d.url().toLocalFile())
+                        break
+                else:
+                    directory = app.basedir() # default directory to save to
+
                 import documentinfo
                 import ly.lex
                 filename = os.path.join(directory, documentinfo.defaultfilename(doc))
                 filetypes = app.filetypes(ly.lex.extensions[documentinfo.mode(doc)])
             caption = app.caption(_("dialog title", "Save File"))
-            filename = QFileDialog.getSaveFileName(self, caption, filename, filetypes)
+            filename = QFileDialog.getSaveFileName(self, caption, filename, filetypes)[0]
             if not filename:
                 return False # cancelled
             url = QUrl.fromLocalFile(filename)
@@ -592,7 +608,7 @@ class MainWindow(QMainWindow):
             caption = app.caption(_("dialog title", "Save Selection"))
         filetypes = app.filetypes(ly.lex.extensions[mode])
         dirname = os.path.dirname(doc.url().toLocalFile()) or app.basedir()
-        filename = QFileDialog.getSaveFileName(self, caption, dirname, filetypes)
+        filename = QFileDialog.getSaveFileName(self, caption, dirname, filetypes)[0]
         if not filename:
             return # cancelled
         try:
@@ -683,6 +699,7 @@ class MainWindow(QMainWindow):
         sessions.manager.get(self).saveCurrentSessionIfDesired()
         if self.queryClose():
             sessions.setCurrentSession(None)
+            self.allDocumentsClosed.emit()
             self.cleanStart()
 
     def quit(self):
@@ -705,7 +722,7 @@ class MainWindow(QMainWindow):
         filetypes = app.filetypes(ext)
         caption = app.caption(_("dialog title", "Insert From File"))
         directory = os.path.dirname(self.currentDocument().url().toLocalFile()) or app.basedir()
-        filename = QFileDialog.getOpenFileName(self, caption, directory, filetypes)
+        filename = QFileDialog.getOpenFileName(self, caption, directory, filetypes)[0]
         if filename:
             try:
                 with open(filename, 'rb') as f:
@@ -762,7 +779,7 @@ class MainWindow(QMainWindow):
         if dir:
             name = os.path.join(dir, name)
         filename = QFileDialog.getSaveFileName(self, app.caption(_("Export as HTML")),
-            name, "{0} (*.html)".format("HTML Files"))
+            name, "{0} (*.html)".format("HTML Files"))[0]
         if not filename:
             return #cancelled
 
@@ -882,6 +899,37 @@ class MainWindow(QMainWindow):
         """Scroll down without moving the cursor"""
         sb = self.currentView().verticalScrollBar()
         sb.setValue(sb.value() + 1)
+    
+    def gotoLine(self):
+        """Ask for line number and go there"""
+        line_count = self.currentDocument().blockCount()
+        view = self.currentView()
+        cur = view.textCursor()
+        current_block = cur.block()
+        current_line = current_block.firstLineNumber()
+        char_pos = cur.position() - current_block.position()
+        loc_pos = view.cursorRect(cur).bottomLeft()
+        pos = view.viewport().mapToGlobal(loc_pos)
+        
+        dlg = QInputDialog(self)
+        dlg.setInputMode(QInputDialog.IntInput)
+        dlg.setIntMinimum(1)
+        dlg.setIntMaximum(line_count)
+        dlg.setIntValue(current_line)
+        dlg.setLabelText(_("Goto Line Line Number (1-{}):".format(line_count)))
+        dlg.setWindowFlags(Qt.Popup)
+        dlg.move(pos)
+        dlg_result = dlg.exec()
+        if dlg_result:
+            line = dlg.intValue()
+            cur = QTextCursor(self.currentDocument().findBlockByNumber(line - 1))
+            new_block = cur.block()
+            if new_block.length() > char_pos:
+                cur.setPosition(cur.position() + char_pos)
+            else:
+                cur.setPosition(cur.position() + new_block.length() - 1)
+            view.setTextCursor(cur)
+            view.centerCursor()
 
     def selectFullLinesUp(self):
         """Select lines upwards, selecting full lines."""
@@ -968,6 +1016,7 @@ class MainWindow(QMainWindow):
         ac.view_wrap_lines.triggered.connect(self.toggleWrapLines)
         ac.view_scroll_up.triggered.connect(self.scrollUp)
         ac.view_scroll_down.triggered.connect(self.scrollDown)
+        ac.view_goto_line.triggered.connect(self.gotoLine)
         ac.window_new.triggered.connect(self.newWindow)
         ac.window_fullscreen.toggled.connect(self.toggleFullScreen)
         ac.help_manual.triggered.connect(self.showManual)
@@ -1087,6 +1136,7 @@ class ActionCollection(actioncollection.ActionCollection):
         self.view_wrap_lines = QAction(parent, checkable=True)
         self.view_scroll_up = QAction(parent)
         self.view_scroll_down = QAction(parent)
+        self.view_goto_line = QAction(parent)
 
         self.window_new = QAction(parent)
         self.window_fullscreen = QAction(parent)
@@ -1165,6 +1215,7 @@ class ActionCollection(actioncollection.ActionCollection):
         self.view_previous_document.setShortcuts(QKeySequence.Back)
         self.view_scroll_up.setShortcut(Qt.CTRL + Qt.Key_Up)
         self.view_scroll_down.setShortcut(Qt.CTRL + Qt.Key_Down)
+        self.view_goto_line.setShortcut(Qt.CTRL + Qt.ALT + Qt.Key_G)
 
         self.window_fullscreen.setShortcuts([QKeySequence(Qt.CTRL + Qt.SHIFT + Qt.Key_F), QKeySequence(Qt.Key_F11)])
 
@@ -1231,6 +1282,7 @@ class ActionCollection(actioncollection.ActionCollection):
         self.view_wrap_lines.setText(_("Wrap &Lines"))
         self.view_scroll_up.setText(_("Scroll Up"))
         self.view_scroll_down.setText(_("Scroll Down"))
+        self.view_goto_line.setText(_("&Goto Line..."))
 
         self.window_new.setText(_("New &Window"))
         self.window_fullscreen.setText(_("&Fullscreen"))

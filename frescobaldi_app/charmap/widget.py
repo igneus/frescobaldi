@@ -21,14 +21,13 @@
 The special characters tool widget.
 """
 
-from __future__ import unicode_literals
 
 import sys
 import itertools
 
-from PyQt4.QtCore import QSettings
-from PyQt4.QtGui import (QComboBox, QScrollArea, QSizePolicy, QVBoxLayout,
-                         QWidget)
+from PyQt5.QtCore import QSettings
+from PyQt5.QtWidgets import (QComboBox, QScrollArea, QSizePolicy, QVBoxLayout,
+                             QWidget)
 
 import app
 import widgets.charmap
@@ -45,11 +44,11 @@ _blocks = tuple(itertools.takewhile(
 class Widget(QWidget):
     def __init__(self, tool):
         super(Widget, self).__init__(tool)
-        
+
         layout = QVBoxLayout()
         self.setLayout(layout)
         layout.setContentsMargins(0, 0, 0, 0)
-        
+
         self.blockCombo = QComboBox()
         self.charmap = CharMapWidget()
 
@@ -60,41 +59,41 @@ class Widget(QWidget):
         p = self.blockCombo.sizePolicy()
         p.setHorizontalPolicy(QSizePolicy.Ignored)
         self.blockCombo.setSizePolicy(p)
-        
+
         # size policy of combo popup
         p = self.blockCombo.view().sizePolicy()
         p.setHorizontalPolicy(QSizePolicy.MinimumExpanding)
         self.blockCombo.view().setSizePolicy(p)
-        
+
         model = listmodel.ListModel(_blocks,
             display = lambda b: b.name)
         self.blockCombo.setModel(model)
-        
+
         # load block setting
-        name = QSettings().value("charmaptool/last_block", "", type(""))
+        name = QSettings().value("charmaptool/last_block", "", str)
         if name:
             for i, b in enumerate(_blocks):
                 if b.name == name:
                     self.blockCombo.setCurrentIndex(i)
                     break
-        
+
         self.blockCombo.activated[int].connect(self.updateBlock)
         self.updateBlock()
-        
+
         self.loadSettings()
         app.settingsChanged.connect(self.loadSettings)
-    
+
     def loadSettings(self):
         s = QSettings()
         s.beginGroup("charmaptool")
         font = self.font()
-        family = s.value("fontfamily", "", type(""))
+        family = s.value("fontfamily", "", str)
         if family:
             font.setFamily(family)
         self.charmap.charmap.setDisplayFont(font)
         size = s.value("fontsize", font.pointSizeF(), float)
         self.charmap.charmap.setDisplayFontSizeF(size)
-    
+
     def updateBlock(self):
         i = self.blockCombo.currentIndex()
         if 0 <= i < len(_blocks):
@@ -114,7 +113,7 @@ class CharMapWidget(QScrollArea):
         # TEMP
         self.charmap.setRange(32, 1023)
         self.charmap.setColumnCount(8)
-    
+
     def resizeEvent(self, ev):
         self.charmap.setColumnCount(
             self.charmap.columnCountForWidth(ev.size().width()))

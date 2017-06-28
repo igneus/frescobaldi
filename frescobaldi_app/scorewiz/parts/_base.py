@@ -21,12 +21,11 @@
 Base types for parts.
 """
 
-from __future__ import unicode_literals
 
 import collections
 
-from PyQt4.QtGui import (QCheckBox, QComboBox, QGridLayout, QHBoxLayout, QLabel,
-                         QSpinBox)
+from PyQt5.QtWidgets import (QCheckBox, QComboBox, QGridLayout, QHBoxLayout,
+                             QLabel, QSpinBox)
 
 import listmodel
 import ly.dom
@@ -45,24 +44,24 @@ class Base(object):
     @staticmethod
     def title(_=translate):
         """Should return a title.
-        
+
         If a translator is given, it is used instead of the builtin.
-        
+
         """
-    
+
     @staticmethod
     def short(_=translate):
         """Should return an abbreviated title.
-        
+
         If a translator is given, it is used instead of the builtin.
-        
+
         """
 
     def createWidgets(self, layout):
         """Should create widgets to adjust settings."""
         self.noSettingsLabel = QLabel()
         layout.addWidget(self.noSettingsLabel)
-        
+
     def translateWidgets(self):
         """Should set the text in the widgets when the language changes."""
         self.noSettingsLabel.setText('({0})'.format(_("No settings available.")))
@@ -70,7 +69,7 @@ class Base(object):
     def accepts(self):
         """Should return a tuple of classes this part item accepts as child items."""
         return ()
-    
+
     def build(self, data, builder):
         """Should populate the PartData (see build.py)."""
         data.nodes.append(ly.dom.Comment("Part {0}".format(self.__class__.__name__)))
@@ -85,7 +84,7 @@ class Container(Base):
     """Base class for "part" types that can contain others, like a Staff Group or Score, Book etc."""
     def accepts(self):
         return (Part, Container)
-    
+
 
 class Group(Container):
     """Base class for "part" types that are a group such as Book, BookPart and Score."""
@@ -120,10 +119,10 @@ class PianoStaffPart(Part):
         self.lowerVoicesLabel = QLabel()
         self.upperVoices = QSpinBox(minimum=1, maximum=4, value=1)
         self.lowerVoices = QSpinBox(minimum=1, maximum=4, value=1)
-        
+
         self.upperVoicesLabel.setBuddy(self.upperVoices)
         self.lowerVoicesLabel.setBuddy(self.lowerVoices)
-        
+
         layout.addWidget(self.label)
         grid = QGridLayout()
         grid.addWidget(self.upperVoicesLabel, 0, 0)
@@ -131,7 +130,7 @@ class PianoStaffPart(Part):
         grid.addWidget(self.lowerVoicesLabel, 1, 0)
         grid.addWidget(self.lowerVoices, 1, 1)
         layout.addLayout(grid)
-    
+
     def translateWidgets(self):
         self.label.setText('{0} <i>({1})</i>'.format(
             _("Adjust how many separate voices you want on each staff."),
@@ -139,7 +138,7 @@ class PianoStaffPart(Part):
               "like a fuge.")))
         self.upperVoicesLabel.setText(_("Right hand:"))
         self.lowerVoicesLabel.setText(_("Left hand:"))
-    
+
     def buildStaff(self, data, builder, name, octave, numVoices=1, node=None, clef=None):
         """Build a staff with the given number of voices and name."""
         staff = ly.dom.Staff(name, parent=node)
@@ -179,13 +178,13 @@ class ChordNames(object):
         self.chordStyle.setModel(listmodel.ListModel(chordNameStyles, self.chordStyle,
             display=listmodel.translate))
         self.guitarFrets = QCheckBox()
-        
+
         box = QHBoxLayout()
         box.addWidget(self.chordStyleLabel)
         box.addWidget(self.chordStyle)
         layout.addLayout(box)
         layout.addWidget(self.guitarFrets)
-        
+
     def translateWidgets(self):
         self.chordStyleLabel.setText(_("Chord style:"))
         self.guitarFrets.setText(_("Guitar fret diagrams"))

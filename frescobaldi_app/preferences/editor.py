@@ -21,10 +21,9 @@
 Helper application preferences.
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import QSettings
-from PyQt4.QtGui import (
+from PyQt5.QtCore import QSettings
+from PyQt5.QtWidgets import (
     QCheckBox, QComboBox, QFileDialog, QGridLayout, QLabel, QLineEdit, QSpinBox,
     QVBoxLayout, QWidget)
 
@@ -49,6 +48,7 @@ class Editor(preferences.ScrolledGroupsPage):
         layout.addWidget(ViewSettings(self))
         layout.addWidget(Highlighting(self))
         layout.addWidget(Indenting(self))
+        layout.addWidget(KeyBoard(self))
         layout.addWidget(SourceExport(self))
         layout.addWidget(TypographicalQuotes(self))
         layout.addStretch()
@@ -225,6 +225,56 @@ class Indenting(preferences.Group):
         s.setValue("document_spaces", self.dspacesBox.value())
 
 
+class KeyBoard(preferences.Group):
+    def __init__(self, page):
+        super(KeyBoard, self).__init__(page)
+
+        layout = QGridLayout(spacing=1)
+        self.setLayout(layout)
+
+        self.keepCursorInLine = QCheckBox(toggled=self.changed)
+        self.smartHome = QCheckBox(toggled=self.changed)
+        self.smartStartEnd = QCheckBox(toggled=self.changed)
+
+        layout.addWidget(self.smartHome, 0, 0, 1, 1)
+        layout.addWidget(self.smartStartEnd, 1, 0, 1, 1)
+        layout.addWidget(self.keepCursorInLine, 2, 0, 1, 1)
+        app.translateUI(self)
+
+    def translateUI(self):
+        self.setTitle(_("Keyboard Preferences"))
+        self.smartHome.setText(_("Smart Home key"))
+        self.smartHome.setToolTip('<qt>' + _(
+            "If enabled, pressing Home will put the cursor at the first non-"
+            "whitespace character on the line. "
+            "When the cursor is on that spot, pressing Home moves the cursor "
+            "to the beginning of the line."))
+        self.smartStartEnd.setText(_("Smart Up/PageUp and Down/PageDown keys"))
+        self.smartStartEnd.setToolTip('<qt>' + _(
+            "If enabled, pressing Up or PageUp in the first line will move the "
+            "cursor to the beginning of the document, and pressing Down or "
+            "PageDown in the last line will move the cursor to the end of the "
+            "document."))
+        self.keepCursorInLine.setText(_("Horizontal arrow keys keep cursor in current line"))
+        self.keepCursorInLine.setToolTip('<qt>' + _(
+            "If enabled, the cursor will stay in the current line when using "
+            "the horizontal arrow keys, and not wrap around to the next or previous line."))
+
+    def loadSettings(self):
+        s = QSettings()
+        s.beginGroup("view_preferences")
+        self.smartHome.setChecked(s.value("smart_home_key", True, bool))
+        self.smartStartEnd.setChecked(s.value("smart_start_end", True, bool))
+        self.keepCursorInLine.setChecked(s.value("keep_cursor_in_line", False, bool))
+
+    def saveSettings(self):
+        s = QSettings()
+        s.beginGroup("view_preferences")
+        s.setValue("smart_home_key", self.smartHome.isChecked())
+        s.setValue("smart_start_end", self.smartStartEnd.isChecked())
+        s.setValue("keep_cursor_in_line", self.keepCursorInLine.isChecked())
+
+
 class SourceExport(preferences.Group):
     def __init__(self, page):
         super(SourceExport, self).__init__(page)
@@ -246,20 +296,27 @@ class SourceExport(preferences.Group):
         self.wrapAttribNameLabel = QLabel()
         self.wrapAttribName = QLineEdit()
         self.wrapAttribName.textEdited.connect(page.changed)
+        self.wrapperTag.setBuddy(self.wrapTagSelector)
+        self.wrapperAttribute.setBuddy(self.wrapAttribSelector)
+        self.wrapAttribNameLabel.setBuddy(self.wrapAttribName)
 
-        # left column
-        layout.addWidget(self.copyHtmlAsPlainText, 0, 0)
-        layout.addWidget(self.copyDocumentBodyOnly, 1, 0)
-        layout.addWidget(self.inlineStyleCopy, 2, 0)
-        layout.addWidget(self.inlineStyleExport, 3, 0)
-        #right column
-        layout.addWidget(self.numberLines, 0, 1, 1, 2)
-        layout.addWidget(self.wrapperTag, 1, 1)
-        layout.addWidget(self.wrapTagSelector, 1, 2)
-        layout.addWidget(self.wrapperAttribute, 2, 1)
-        layout.addWidget(self.wrapAttribSelector, 2, 2)
-        layout.addWidget(self.wrapAttribNameLabel, 3, 1)
-        layout.addWidget(self.wrapAttribName, 3, 2)
+        layout.addWidget(self.copyHtmlAsPlainText, 0, 0, 1, 2)
+        layout.addWidget(self.copyDocumentBodyOnly, 1, 0, 1, 2)
+        layout.addWidget(self.inlineStyleCopy, 2, 0, 1, 2)
+        layout.addWidget(self.inlineStyleExport, 3, 0, 1, 2)
+        layout.addWidget(self.numberLines, 4, 0, 1, 2)
+        layout.addWidget(self.wrapperTag, 5, 0)
+        layout.addWidget(self.wrapTagSelector, 5, 1)
+        layout.addWidget(self.wrapperAttribute, 6, 0)
+        layout.addWidget(self.wrapAttribSelector, 6, 1)
+        layout.addWidget(self.wrapAttribNameLabel, 7, 0)
+        layout.addWidget(self.wrapAttribName, 7, 1)
+
+        self.wrapTagSelector.addItem("pre")
+        self.wrapTagSelector.addItem("code")
+        self.wrapTagSelector.addItem("div")
+        self.wrapAttribSelector.addItem("id")
+        self.wrapAttribSelector.addItem("class")
 
         app.translateUI(self)
 
@@ -296,14 +353,9 @@ class SourceExport(preferences.Group):
         self.wrapperTag.setText(_("Tag to wrap around source:" + "  "))
         self.wrapperTag.setToolTip('<qt>' + _(
             "Choose what tag the colored HTML will be wrapped into."))
-        self.wrapTagSelector.addItem(_("pre"))
-        self.wrapTagSelector.addItem(_("code"))
-        self.wrapTagSelector.addItem(_("div"))
         self.wrapperAttribute.setText(_("Attribute type of wrapper:" + "  "))
         self.wrapperAttribute.setToolTip('<qt>' + _(
             "Choose whether the wrapper tag should be of type 'id' or 'class'"))
-        self.wrapAttribSelector.addItem(_("id"))
-        self.wrapAttribSelector.addItem(_("class"))
         self.wrapAttribNameLabel.setText(_("Name of attribute:" + "  "))
         self.wrapAttribNameLabel.setToolTip('<qt>' + _(
             "Arbitrary name for the type attribute. " +
@@ -397,17 +449,17 @@ class TypographicalQuotes(preferences.Group):
     def loadSettings(self):
         s = QSettings()
         s.beginGroup("typographical_quotes")
-        lang = s.value("language", "current", type(""))
+        lang = s.value("language", "current", str)
         try:
             index = self._langs.index(lang)
         except ValueError:
             index = 0
         self.languageCombo.setCurrentIndex(index)
         default = lasptyqu.default()
-        self.primaryLeft.setText(s.value("primary_left", default.primary.left, type("")))
-        self.primaryRight.setText(s.value("primary_right", default.primary.right, type("")))
-        self.secondaryLeft.setText(s.value("secondary_left", default.secondary.left, type("")))
-        self.secondaryRight.setText(s.value("secondary_right", default.secondary.right, type("")))
+        self.primaryLeft.setText(s.value("primary_left", default.primary.left, str))
+        self.primaryRight.setText(s.value("primary_right", default.primary.right, str))
+        self.secondaryLeft.setText(s.value("secondary_left", default.secondary.left, str))
+        self.secondaryRight.setText(s.value("secondary_right", default.secondary.right, str))
 
     def saveSettings(self):
         s = QSettings()

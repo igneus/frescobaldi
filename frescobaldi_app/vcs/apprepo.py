@@ -21,23 +21,22 @@
 Repository of Frescobaldi application.
 """
 
-from __future__ import unicode_literals
 
 import sys
 import os
 
-from .gitrepo import GitRepo
+from . import gitrepo
 
-class AppRepo(GitRepo):
+class Repo(gitrepo.Repo):
     """
     Subclass to be used for the Frescobaldi Git repository.
     Offers methods exclusively useful for this specific repo.
     """
     def __init__(self):
-        super(AppRepo, self).__init__((os.path.normpath(
+        super(Repo, self).__init__((os.path.normpath(
                                         os.path.join(sys.path[0], '..'))))
         self._activeBranch = self.current_branch()
-    
+
     def active_branch(self):
         """
         Returns the name of the branch that was current_branch

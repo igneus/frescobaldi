@@ -21,19 +21,18 @@
 Backup files before overwriting
 """
 
-from __future__ import unicode_literals
 
 import os
 import shutil
 
-from PyQt4.QtCore import QSettings
+from PyQt5.QtCore import QSettings
 
 
 def backup(filename):
     """Makes a backup of 'filename'.
-    
+
     Returns True if the backup succeeded.
-    
+
     """
     if filename:
         try:
@@ -55,9 +54,9 @@ def removeBackup(filename):
 
 def scheme():
     """Returns a string that must contain "FILE".
-    
+
     Replacing that part yields the backup name.
-    
+
     """
     s = QSettings().value("backup_scheme", "FILE~")
     assert 'FILE' in s and s != 'FILE'

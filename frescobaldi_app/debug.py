@@ -6,7 +6,6 @@
 # signals to debug-print functions, and imports the most important modules such
 # as app.
 
-from __future__ import unicode_literals
 from __future__ import print_function
 
 import sys
@@ -23,9 +22,9 @@ def doc_repr(self):
     index = app.documents.index(self)
     return '<Document #{0} "{1}">'.format(index, self.url().toString())
 document.Document.__repr__ = doc_repr
-    
+
 @app.documentCreated.connect
-def f(doc): 
+def f(doc):
     print("created:", doc)
 
 @app.documentLoaded.connect
@@ -48,8 +47,8 @@ def f(doc, job, success):
 
 
 # more to add...
-    
-    
+
+
 # delete unneeded stuff
 del f, doc_repr
 
@@ -67,7 +66,7 @@ main.main()
 app.appStarted()
 
 # be friendly and import Qt stuff
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 
 

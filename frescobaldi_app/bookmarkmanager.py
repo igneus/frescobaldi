@@ -21,10 +21,9 @@
 Manages the actions that manipulate the bookmarks (see also bookmarks.py).
 """
 
-from __future__ import unicode_literals
 
-from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QAction
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QAction
 
 import actioncollection
 import actioncollectionmanager
@@ -47,7 +46,7 @@ class BookmarkManager(plugin.MainWindowPlugin):
         if mainwindow.currentView():
             self.slotViewChanged(mainwindow.currentView())
             self.slotDocumentChanged(mainwindow.currentDocument())
-    
+
     def slotViewChanged(self, view, prev=None):
         if prev:
             prev.cursorPositionChanged.disconnect(self.updateMarkStatus)
@@ -67,28 +66,28 @@ class BookmarkManager(plugin.MainWindowPlugin):
         view = self.mainwindow().currentView()
         lineNumber = view.textCursor().blockNumber()
         bookmarks.bookmarks(view.document()).toggleMark(lineNumber, 'mark')
-    
+
     def clearErrorMarks(self):
         doc = self.mainwindow().currentDocument()
         bookmarks.bookmarks(doc).clear('error')
-        
+
     def clearAllMarks(self):
         doc = self.mainwindow().currentDocument()
         bookmarks.bookmarks(doc).clear()
-    
+
     def nextMark(self):
         view = self.mainwindow().currentView()
         cursor = view.textCursor()
         cursor = bookmarks.bookmarks(view.document()).nextMark(cursor)
         if cursor:
-            view.setTextCursor(cursor)
-            
+            view.gotoTextCursor(cursor)
+
     def previousMark(self):
         view = self.mainwindow().currentView()
         cursor = view.textCursor()
         cursor = bookmarks.bookmarks(view.document()).previousMark(cursor)
         if cursor:
-            view.setTextCursor(cursor)
+            view.gotoTextCursor(cursor)
 
 
 class Actions(actioncollection.ActionCollection):

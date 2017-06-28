@@ -21,7 +21,6 @@
 Harvest strings from document for autocompletion purposes.
 """
 
-from __future__ import unicode_literals
 
 import itertools
 import re
@@ -48,7 +47,7 @@ def markup_commands(cursor):
     """Harvest markup command definitions until the cursor."""
     return get_docinfo(cursor).markup_definitions()
 
-    
+
 def schemewords(document):
     """Harvests all schemewords from the document."""
     for t in tokeniter.all_tokens(document):
@@ -70,7 +69,7 @@ def include_markup_commands(cursor):
     files = fileinfo.includefiles(get_docinfo(cursor), dinfo.includepath())
     return itertools.chain.from_iterable(fileinfo.docinfo(f).markup_definitions()
                                          for f in files)
-    
+
 
 _words = re.compile(r'\w{5,}|\w{2,}(?:[:-]\w+)+').finditer
 _word_types = (

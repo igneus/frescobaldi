@@ -25,11 +25,10 @@ A session is a global list of open documents, with some additional preferences s
 
 """
 
-from __future__ import unicode_literals
 
 import itertools
 
-from PyQt4.QtCore import QSettings, QUrl
+from PyQt5.QtCore import QSettings, QUrl
 
 import app
 import util
@@ -44,25 +43,25 @@ def _saveLastUsedSession():
     s = QSettings()
     s.beginGroup("session")
     s.setValue("lastused", _currentSession or "")
-    
+
 def loadDefaultSession():
     """Load the session which should be started by default.
-    
+
     This can be:
     - no session,
     - last used session,
     - a specific session.
-    
+
     Returns the document that should be set active (if any).
     """
     s = QSettings()
     s.beginGroup("session")
-    start = s.value("startup", "none", type(""))
+    start = s.value("startup", "none", str)
     name = None
     if start == "lastused":
-        name = s.value("lastused", "", type(""))
+        name = s.value("lastused", "", str)
     elif start == "custom":
-        name = s.value("custom", "", type(""))
+        name = s.value("custom", "", str)
         if name not in sessionNames():
             s.setValue("startup", "none")
     if name and name in sessionNames():
@@ -70,14 +69,14 @@ def loadDefaultSession():
 
 def sessionGroup(name):
     """Returns the session settings group where settings can be stored for the named session.
-    
+
     If the group doesn't exist, it is created.
-    
+
     """
     session = app.settings("sessions")
     childGroups = session.childGroups()
     for group in childGroups:
-        if session.value(group + "/name", "", type("")) == name:
+        if session.value(group + "/name", "", str) == name:
             break
     else:
         for count in itertools.count(1):
@@ -90,16 +89,16 @@ def sessionGroup(name):
 
 def sessionNames():
     session = app.settings("sessions")
-    names = [session.value(group + "/name", "", type("")) for group in session.childGroups()]
+    names = [session.value(group + "/name", "", str) for group in session.childGroups()]
     names.sort(key=util.naturalsort)
     return names
-    
+
 def loadSession(name):
     """Loads the given session (without closing other docs first).
-    
+
     Return the document that should become the active one.
     If None is returned, the session did not open any documents!
-    
+
     """
     session = sessionGroup(name)
     urls = qsettings.get_url_list(session, "urls")
@@ -134,7 +133,7 @@ def saveSession(name, documents, activeDocument=None):
 def deleteSession(name):
     session = app.settings("sessions")
     for group in session.childGroups():
-        if session.value(group + "/name", "", type("")) == name:
+        if session.value(group + "/name", "", str) == name:
             session.remove(group)
             break
     if name == _currentSession:
@@ -146,10 +145,10 @@ def renameSession(old, new):
     session.setValue("name", new)
     if old == currentSession():
         setCurrentSession(new)
-    
+
 def currentSession():
     return _currentSession
-    
+
 def setCurrentSession(name):
     global _currentSession
     if name != _currentSession:
@@ -159,9 +158,9 @@ def setCurrentSession(name):
 
 def currentSessionGroup():
     """Returns the session settings at the current group is there is a current session.
-    
+
     If there is no current session, returns None.
-    
+
     """
     if _currentSession:
         return sessionGroup(_currentSession)
