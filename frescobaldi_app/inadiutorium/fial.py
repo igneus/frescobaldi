@@ -4,7 +4,7 @@ from . import in_adiutorium_root
 
 FIAL_RE = re.compile(r'^(?P<prefix>fial://)?(?P<path>.+?)#(?P<id>.+?)(\?(?P<params>.*))?$')
 
-class FIAL(object):
+class FIAL:
     """
     parsed reference to a score in the In adiutorium project structure
     """

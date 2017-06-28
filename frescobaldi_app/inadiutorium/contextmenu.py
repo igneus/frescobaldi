@@ -1,13 +1,12 @@
-from __future__ import unicode_literals
-
-from PyQt4.QtGui import QApplication, QAction, QMessageBox, QTextCursor, QTextDocument
-from PyQt4.QtCore import QUrl
+from PyQt5.QtWidgets import QApplication, QAction, QMessageBox
+from PyQt5.QtGui import QTextCursor, QTextDocument
+from PyQt5.QtCore import QUrl
 
 import app
 
 from . import is_in_adiutorium_file
-from variations import is_variations_file, main_file, variations_file
-import score
+from .variations import is_variations_file, main_file, variations_file
+from . import score
 
 def actions(cursor, menu, mainwindow):
     """
@@ -17,7 +16,7 @@ def actions(cursor, menu, mainwindow):
 
     return ActionsFactory(cursor, menu, mainwindow).actions()
 
-class ActionsFactory(object):
+class ActionsFactory:
     def __init__(self, cursor, menu, mainwindow):
         self._cursor = cursor
         self._menu = menu

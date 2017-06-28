@@ -1,9 +1,9 @@
 import ly.music.items
 import documentinfo
 
-from fial import FIAL
+from .fial import FIAL
 
-class Score(object):
+class Score:
     """
     encapsulates a score, provides functionality important
     for In adiutorium project tasks
@@ -17,7 +17,7 @@ class Score(object):
         header = self._lyscore.find_child(ly.music.items.Header)
         if header:
             for h in header.find_children(ly.music.items.Assignment):
-                hkey = unicode(h.name())
+                hkey = h.name()
                 hval = h.value().plaintext()
                 self.headers[hkey] = hval
 
